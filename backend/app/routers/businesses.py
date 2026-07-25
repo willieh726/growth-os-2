@@ -24,10 +24,12 @@ async def discover_websites(bg: BackgroundTasks, limit: int = 90):
     targets = [dict(r) for r in rows]
 
     async def _run() -> None:
+        import asyncio
         import logging
         log = logging.getLogger("discovery")
         found = 0
         for t in targets:
+            await asyncio.sleep(1.1)  # Brave free tier: max 1 request/second
             try:
                 url = await find_website(t["name"], t["city"], t["state"])
                 if url:
