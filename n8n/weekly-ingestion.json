@@ -1,0 +1,46 @@
+{
+  "name": "Growth OS — Weekly ingestion sweep (CT, all industries)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "weeks", "triggerAtDay": [1], "triggerAtHour": 6 }] }
+      },
+      "name": "Mondays 6am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return ['tree_service','excavation','septic','concrete'].map(industry => ({ json: { industry, state: 'CT' } }));"
+      },
+      "name": "Industries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GROWTH_OS_API }}/ingestion/runs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ industry: $json.industry, state: $json.state }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "options": {}
+      },
+      "name": "Start ingestion run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    }
+  ],
+  "connections": {
+    "Mondays 6am": { "main": [[{ "node": "Industries", "type": "main", "index": 0 }]] },
+    "Industries": { "main": [[{ "node": "Start ingestion run", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

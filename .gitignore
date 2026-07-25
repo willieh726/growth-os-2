@@ -1,0 +1,16 @@
+# ── Secrets: never commit these. Keys live in Railway/Vercel env settings.
+.env
+.env.local
+.env.*.local
+
+# ── Personal files that must never reach a repo
+github-password*
+*.pdf
+
+# ── Build junk
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.DS_Store
+.vercel
