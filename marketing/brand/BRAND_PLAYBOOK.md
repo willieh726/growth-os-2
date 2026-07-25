@@ -91,15 +91,26 @@ deliverability.
   (nothing / spam-folder it / reject it) and where to send reports.
 
 ### Do NOW: anti-spoofing armor on the brand domain
-`signalsyncagency.com` currently *sends nothing* — so lock it, which stops scammers
-from spoofing it and warms trust with mail providers. In Namecheap Advanced DNS:
 
-| Type | Host    | Value                                        | Purpose                            |
-|------|---------|----------------------------------------------|------------------------------------|
-| TXT  | `@`     | `v=spf1 -all`                                | "No server may send as this domain"|
-| TXT  | `_dmarc`| `v=DMARC1; p=reject; rua=mailto:will@signalsyncagency.com` | Reject spoofs, report to you |
+⚠️ CORRECTION (found via Search Console DNS readout): the domain ALREADY has an SPF
+record that Namecheap created for email forwarding:
+`v=spf1 include:spf.efwd.registrar-servers.com ~all`
+**Do NOT add a second SPF record and do NOT replace it with `v=spf1 -all`** — two SPF
+records is an automatic fail at every receiver, and `-all` would break forwarding.
+Leave that record exactly as it is.
 
-Inbound forwarding is untouched by these (it runs on MX records — don't edit those).
+Add only DMARC, in Namecheap Advanced DNS:
+
+| Type | Host    | Value                                                        | Purpose                        |
+|------|---------|--------------------------------------------------------------|--------------------------------|
+| TXT  | `_dmarc`| `v=DMARC1; p=quarantine; rua=mailto:will@signalsyncagency.com`| Spoofed mail → spam; reports to you |
+
+Start at `p=quarantine` (not `reject`) while forwarding is in play — forwarded mail
+can legitimately fail SPF checks, and quarantine avoids silently losing real mail.
+Tighten to `p=reject` after moving to a real mailbox (below).
+
+Note: adding OTHER TXT records (e.g. Google Search Console verification) is fine —
+the one-per-domain rule applies only to SPF records.
 
 ### Do LATER (at first paying client): real mailbox
 Buy **Google Workspace Starter** (~$7/mo) for `will@signalsyncagency.com` — real
