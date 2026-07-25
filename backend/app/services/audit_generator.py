@@ -8,8 +8,8 @@ from ..db import get_pool
 from .ai import complete, facts_block
 
 SYSTEM = """You write digital-presence audits for small blue-collar contractors
-(tree service, excavation, septic, concrete). Audience: a busy owner-operator
-reading on a phone. Rules:
+(tree service, excavation, septic, concrete, HVAC, plumbing, electrical,
+roofing, landscaping). Audience: a busy owner-operator reading on a phone. Rules:
 - Use ONLY the measured facts provided. Never invent metrics, rankings, or
   competitor names. If a fact isn't provided, don't claim it.
 - NEVER state made-up quantities: no "losing X jobs per month", no "worth X
