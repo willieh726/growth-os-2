@@ -78,7 +78,8 @@ async def analyze_and_score(business_id: str) -> int:
     Called by ingestion, the rescore endpoint, and the nightly n8n cron."""
     pool = await get_pool()
     row = await pool.fetchrow(
-        """select website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count
+        """select website_url, has_website, gbp_rating, gbp_review_count,
+                  gbp_photo_count, website_discovered
            from businesses where id=$1""", business_id,
     )
     if not row:
@@ -92,5 +93,6 @@ async def analyze_and_score(business_id: str) -> int:
                 gbp_rating=float(row["gbp_rating"]) if row["gbp_rating"] is not None else None,
                 gbp_review_count=row["gbp_review_count"],
                 gbp_photo_count=row["gbp_photo_count"],
+                website_discovered=row["website_discovered"],
             )
             return await score_and_store(conn, business_id, facts, site)

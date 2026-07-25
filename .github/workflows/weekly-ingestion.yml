@@ -1,0 +1,25 @@
+name: Weekly CT ingestion sweep
+# Re-sweeps all four industries every Monday starting 6am ET.
+# Existing businesses dedupe/merge; new ones get scored. 25 min between
+# industries keeps runs sequential.
+on:
+  schedule:
+    - cron: "0 10 * * 1"   # 10:00 UTC Monday ≈ 6am ET
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run all four industries sequentially
+        run: |
+          for industry in tree_service excavation septic concrete; do
+            echo "Starting $industry..."
+            curl -fsS -X POST \
+              "https://growth-os-2-production.up.railway.app/ingestion/runs" \
+              -H "Content-Type: application/json" \
+              -H "X-Internal-Key: ${{ secrets.INTERNAL_API_KEY }}" \
+              -d "{\"industry\": \"$industry\", \"state\": \"CT\"}"
+            echo ""
+            sleep 1500
+          done

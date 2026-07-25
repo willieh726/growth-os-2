@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     auth_disabled: bool = True
 
     google_places_api_key: str = ""
+    google_cse_id: str = ""      # Programmable Search Engine ID for website discovery
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-5"
 

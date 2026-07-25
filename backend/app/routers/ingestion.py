@@ -1,14 +1,15 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from ..auth import require_user
+from ..auth import require_user_or_internal
 from ..db import get_pool
 from ..services.adapters.csv_adapter import CSVAdapter
 from ..services.adapters.google_places import GooglePlacesAdapter
 from ..services.geo import STATE_CITIES
 from ..services.pipeline import run_ingestion
 
-router = APIRouter(prefix="/ingestion", tags=["ingestion"], dependencies=[Depends(require_user)])
+router = APIRouter(prefix="/ingestion", tags=["ingestion"],
+                   dependencies=[Depends(require_user_or_internal)])
 
 
 class StartRun(BaseModel):

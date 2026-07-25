@@ -1,31 +1,74 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
-from ..auth import require_user
+from ..auth import require_user_or_internal
 from ..db import get_pool
 from ..services.pipeline import analyze_and_score
+from ..services.website_finder import find_website
 
-router = APIRouter(prefix="/businesses", tags=["businesses"], dependencies=[Depends(require_user)])
+router = APIRouter(prefix="/businesses", tags=["businesses"],
+                   dependencies=[Depends(require_user_or_internal)])
+
+
+@router.post("/discover-websites")
+async def discover_websites(bg: BackgroundTasks, limit: int = 90):
+    """For businesses flagged 'no website', search the web for an unlinked
+    site. Found ones get re-classified + re-scored with the honest signal
+    'website exists but not linked on their Google profile'. Limit defaults
+    to 90/run — the search API's free tier is 100 queries/day."""
+    pool = await get_pool()
+    rows = await pool.fetch(
+        """select id, name, city, state from businesses
+           where has_website = false and website_discovered = false
+           order by first_seen_at limit $1""", limit,
+    )
+    targets = [dict(r) for r in rows]
+
+    async def _run() -> None:
+        import logging
+        log = logging.getLogger("discovery")
+        found = 0
+        for t in targets:
+            try:
+                url = await find_website(t["name"], t["city"], t["state"])
+                if url:
+                    await pool.execute(
+                        """update businesses
+                           set website_url=$2, has_website=true, website_discovered=true
+                           where id=$1""", t["id"], url,
+                    )
+                    await analyze_and_score(str(t["id"]))
+                    found += 1
+            except Exception:
+                log.exception("discovery failed for %s", t["name"])
+        log.info("website discovery pass done: %s/%s found", found, len(targets))
+
+    bg.add_task(_run)
+    return {"queued": len(targets), "note": "runs in background; check scores in ~10 min"}
 
 
 @router.post("/rescore-all")
-async def rescore_all(state: str | None = None, limit: int = 500):
-    """Re-crawl and re-grade every business (optionally one state).
-    Scores are append-only, so this is always safe to run — used after
-    scoring-logic changes or to refresh stale grades."""
+async def rescore_all(bg: BackgroundTasks, state: str | None = None, limit: int = 5000):
+    """Queue a re-crawl + re-grade of every business (optionally one state).
+    Runs in the background — at thousands of businesses a synchronous loop
+    would time out the request. Scores are append-only, always safe."""
     pool = await get_pool()
     rows = await pool.fetch(
         """select id from businesses
            where ($1::text is null or state = $1) limit $2""",
         state.upper() if state else None, limit,
     )
-    results = {"rescored": 0, "errors": 0}
-    for r in rows:
-        try:
-            await analyze_and_score(str(r["id"]))
-            results["rescored"] += 1
-        except Exception:
-            results["errors"] += 1
-    return results
+    ids = [str(r["id"]) for r in rows]
+
+    async def _run() -> None:
+        import logging
+        for bid in ids:
+            try:
+                await analyze_and_score(bid)
+            except Exception:
+                logging.getLogger("rescore").exception("rescore failed for %s", bid)
+
+    bg.add_task(_run)
+    return {"queued": len(ids), "note": "running in background; scores update as it goes"}
 
 
 @router.get("")

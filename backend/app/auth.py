@@ -51,3 +51,14 @@ async def require_user(authorization: str | None = Header(default=None)) -> dict
 async def require_internal(x_internal_key: str | None = Header(default=None)) -> None:
     if x_internal_key != get_settings().internal_api_key:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Bad internal key")
+
+
+async def require_user_or_internal(
+    authorization: str | None = Header(default=None),
+    x_internal_key: str | None = Header(default=None),
+) -> dict:
+    """For endpoints used by both humans (dashboard) and machines (crons),
+    e.g. starting ingestion runs."""
+    if x_internal_key and x_internal_key == get_settings().internal_api_key:
+        return {"id": "internal", "email": "cron@internal"}
+    return await require_user(authorization)

@@ -210,11 +210,39 @@ async def stop_enrollments(lead_id: str, reason: str, status: str = "stopped_rep
     return n
 
 
+DAILY_SEND_CAP = 25          # warm-up guardrail; raise deliberately as domain ages
+SEND_WINDOW = (9, 18)        # ET hours; contractors read email early, not at 3am
+
+
 async def process_due(limit: int = 50) -> dict:
-    """Advance every due enrollment one step. Idempotent; n8n calls this
+    """Advance every due enrollment one step. Idempotent; the cron calls this
     every 15 min. Each enrollment: check reply-stop → generate step email
     → send → schedule next step or complete."""
+    from zoneinfo import ZoneInfo
     pool = await get_pool()
+
+    # Watchdog (piggybacks on the cron): any ingestion run "running" for 3+
+    # hours was killed mid-flight — declare it dead instead of haunting the UI.
+    await pool.execute(
+        """update ingestion_runs
+           set status='failed', error='stale — marked failed by watchdog', finished_at=now()
+           where status='running' and started_at < now() - interval '3 hours'"""
+    )
+
+    # Send window: weekdays, business-adjacent hours ET only.
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    if now_et.weekday() >= 5 or not (SEND_WINDOW[0] <= now_et.hour < SEND_WINDOW[1]):
+        return {"skipped": "outside send window", "window_et": f"Mon-Fri {SEND_WINDOW[0]}-{SEND_WINDOW[1]}"}
+
+    # Daily cap: never exceed warm-up volume no matter how many steps are due.
+    sent_24h = await pool.fetchval(
+        "select count(*) from outreach_messages where status='sent' and sent_at > now() - interval '24 hours'"
+    )
+    budget = DAILY_SEND_CAP - (sent_24h or 0)
+    if budget <= 0:
+        return {"skipped": "daily send cap reached", "cap": DAILY_SEND_CAP}
+    limit = min(limit, budget)
+
     due = await pool.fetch(
         """select e.id, e.lead_id, e.sequence_id, e.current_step
            from sequence_enrollments e

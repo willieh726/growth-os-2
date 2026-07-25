@@ -34,6 +34,9 @@ class BusinessFacts:
     gbp_rating: float | None
     gbp_review_count: int | None
     gbp_photo_count: int | None
+    # Site exists but was found via web search, NOT linked on their Google
+    # Business Profile — a real (and honestly-pitchable) visibility problem.
+    website_discovered: bool = False
 
 
 def compute_score(facts: BusinessFacts, site: SiteSignals) -> tuple[int, dict]:
@@ -50,6 +53,12 @@ def compute_score(facts: BusinessFacts, site: SiteSignals) -> tuple[int, dict]:
         reason = "No website at all" if not facts.has_website else \
                  f"Website listed but unreachable ({site.error or site.status_code})"
         b["no_website"] = {"points": MAX["no_website"], "max": MAX["no_website"], "reason": reason}
+    elif facts.website_discovered:
+        b["no_website"] = {
+            "points": 10, "max": MAX["no_website"],
+            "reason": "Has a website, but it's NOT linked on their Google Business "
+                      "Profile — customers finding them on Maps never see it",
+        }
     else:
         b["no_website"] = {"points": 0, "max": MAX["no_website"],
                            "reason": "Has a website (blocked our inspection)" if blocked
