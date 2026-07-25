@@ -5,7 +5,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     database_url: str
     supabase_url: str = ""
-    supabase_jwt_secret: str = ""
+    supabase_anon_key: str = ""
+    supabase_jwt_secret: str = ""  # legacy, unused with API-based verification
     auth_disabled: bool = True
 
     google_places_api_key: str = ""
