@@ -35,6 +35,8 @@ async def send(message_id: str):
         return await outreach.send_message(message_id)
     except ValueError as e:
         raise HTTPException(400, str(e))
+    except Exception as e:  # surface provider errors instead of a blind 500
+        raise HTTPException(502, f"Send failed: {type(e).__name__}: {e}")
 
 
 @router.post("/leads/{lead_id}/enroll", dependencies=[Depends(require_user)])
