@@ -117,8 +117,8 @@ Buy **Google Workspace Starter** (~$7/mo) for `will@signalsyncagency.com` — re
 sending, calendar invites, professional threading. Migration checklist:
 1. Add Workspace's MX records in Namecheap (this REPLACES the forwarding MX — do all
    five in one sitting).
-2. REPLACE the `v=spf1 -all` TXT with `v=spf1 include:_spf.google.com ~all`
-   (never have two SPF records — one record, edited).
+2. EDIT the existing SPF record (`v=spf1 include:spf.efwd.registrar-servers.com ~all`)
+   to `v=spf1 include:_spf.google.com ~all` — edit it, never add a second one.
 3. Add Google's DKIM record from the Workspace admin console.
 4. Soften DMARC to `p=quarantine` for 2 weeks, then back to `p=reject`.
 5. Send/receive test both directions before telling anyone the address.
@@ -189,7 +189,7 @@ service framing. Add, in order:
 
 | # | Action                                            | Cost      | Time    |
 |---|---------------------------------------------------|-----------|---------|
-| 1 | Anti-spoof DNS on brand domain (SPF -all + DMARC) | $0        | 10 min  |
+| 1 | Add DMARC TXT on brand domain (leave SPF alone)   | $0        | 5 min   |
 | 2 | Gmail signatures installed (founder first)        | $0        | 15 min  |
 | 3 | Logo: Beacon mark in Canva (or Fiverr ~$50)       | $0–50     | 1–2 hrs |
 | 4 | Favicon + og:image on the website                 | $0        | 30 min  |
