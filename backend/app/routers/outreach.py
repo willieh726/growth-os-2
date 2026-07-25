@@ -61,5 +61,11 @@ async def messages(lead_id: str):
 
 @router.post("/process-due", dependencies=[Depends(require_internal)])
 async def process_due(limit: int = 50):
-    """Machine endpoint — n8n hits this every 15 minutes."""
+    """Machine endpoint — the cron hits this every 15 minutes."""
     return await outreach.process_due(limit)
+
+
+@router.post("/warmup", dependencies=[Depends(require_internal)])
+async def warmup():
+    """Machine endpoint — weekday cron sends domain warm-up notes."""
+    return await outreach.send_warmup()

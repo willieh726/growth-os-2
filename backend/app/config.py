@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     outreach_from_email: str = ""
     outreach_from_name: str = ""
     resend_webhook_secret: str = ""
+    warmup_recipients: str = ""   # comma-separated inboxes you control
 
     api_base_url: str = "http://localhost:8000"
     frontend_url: str = "http://localhost:3000"

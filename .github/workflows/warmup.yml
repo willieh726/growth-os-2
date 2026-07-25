@@ -1,0 +1,17 @@
+name: Domain warm-up
+# Weekday mid-morning ET: send low-key notes from the outreach domain to
+# inboxes we control, building sender reputation before real volume.
+on:
+  schedule:
+    - cron: "30 14 * * 1-5"   # 14:30 UTC ≈ 10:30am ET, Mon-Fri
+  workflow_dispatch: {}
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send warm-up notes
+        run: |
+          curl -fsS -X POST \
+            "https://growth-os-2-production.up.railway.app/outreach/warmup" \
+            -H "X-Internal-Key: ${{ secrets.INTERNAL_API_KEY }}"

@@ -210,6 +210,41 @@ async def stop_enrollments(lead_id: str, reason: str, status: str = "stopped_rep
     return n
 
 
+# Rotating, human-looking warm-up notes. Deliberately boring — the goal is
+# engagement signals on the domain, not marketing.
+WARMUP_NOTES = [
+    ("quick note", "Hey — just jotting this down so I don't forget. Talk soon.\n\nWill"),
+    ("following up from earlier", "Circling back on what we talked about. No rush at all.\n\nWill"),
+    ("schedule for next week", "Penciling in some time next week — I'll confirm once I know my days.\n\nWill"),
+    ("that link I mentioned", "Found the thing I mentioned — I'll bring it up next time we talk.\n\nWill"),
+    ("notes from today", "Wrapping up for the day. A few notes on my end, nothing urgent.\n\nWill"),
+]
+
+
+async def send_warmup() -> dict:
+    """Send 1 low-key note to each configured warm-up inbox. Called by a
+    weekday cron. Recipients should open it and pull it out of spam if
+    needed — that's the training signal that builds domain reputation."""
+    import random
+    s = get_settings()
+    recipients = [r.strip() for r in s.warmup_recipients.split(",") if r.strip()]
+    if not recipients:
+        return {"skipped": "WARMUP_RECIPIENTS not configured"}
+    resend.api_key = s.resend_api_key
+    sent = []
+    for to in recipients:
+        subject, body = random.choice(WARMUP_NOTES)
+        resend.Emails.send({
+            "from": f"{s.outreach_from_name} <{s.outreach_from_email}>",
+            "to": [to],
+            "subject": subject,
+            "text": body,
+            "reply_to": s.outreach_from_email,
+        })
+        sent.append(to)
+    return {"sent": sent}
+
+
 DAILY_SEND_CAP = 25          # warm-up guardrail; raise deliberately as domain ages
 SEND_WINDOW = (9, 18)        # ET hours; contractors read email early, not at 3am
 
