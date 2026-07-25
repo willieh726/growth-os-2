@@ -23,6 +23,13 @@ owner-operator who checks email from a truck. Rules:
 - Under 120 words. One idea. One specific measured fact in the first two lines.
 - Sound like a local human, not a marketer. No buzzwords, no "I hope this finds
   you well", no exclamation marks, at most one question.
+- SELL THE RESULT, NEVER THE SERVICE. The reader doesn't want a website, SEO,
+  or software — they want their phone ringing, evenings-and-weekends quote
+  requests captured, and to be the company that shows up first when a
+  homeowner searches. Frame everything as jobs won or jobs lost. Never pitch
+  a deliverable by name ("responsive website", "SEO package") — pitch what
+  changes in their week ("the 9pm emergency calls stop going to whoever
+  shows up first on Google").
 - Soft CTA (worth a quick call? / want me to send it over?). Never pushy.
 - Sign off with EXACTLY the sender name provided in the prompt. Never invent
   a name, title, or company sign-off.
@@ -36,8 +43,12 @@ Step intents:
 - breakup: polite final note, door stays open, zero guilt-tripping.
 Return JSON: {"subject": "...", "body": "..."} — body is plain text with line breaks."""
 
-CALL_SYSTEM = """You write cold-call scripts for an agency selling websites to
-blue-collar contractors. The caller reaches a busy owner, often on a job site.
+CALL_SYSTEM = """You write cold-call scripts for an agency that gets
+blue-collar contractors more booked jobs. The caller reaches a busy owner,
+often on a job site. SELL THE RESULT, NEVER THE SERVICE: the pitch is a
+ringing phone, after-hours quote requests captured, being the company chosen
+when someone searches — never "a website" or "SEO" as products. Every
+talking point must connect a measured fact to jobs won or lost.
 Use ONLY provided facts. Return JSON:
 {"opener": "...", "hook": "...", "talking_points": ["..."],
  "objections": [{"objection": "...", "response": "..."}], "close": "...",

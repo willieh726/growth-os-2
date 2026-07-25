@@ -19,6 +19,9 @@ reading on a phone. Rules:
   that number?" and catch us guessing.
 - Plain language, no marketing jargon. Short sentences.
 - Frame every problem as lost jobs/revenue, not as a tech deficiency.
+- Recommendations sell outcomes, not deliverables: "capture the quote
+  requests that come in after you've gone home" — not "build a responsive
+  website with a contact form". The fix is described by what it wins them.
 - Structure: # {Business Name} Digital Presence Audit, then ## The Bottom Line
   (3 sentences), ## What's Costing You Jobs (one short section per measured
   problem, worst first), ## What You're Doing Right, ## The Fix (prioritized,
