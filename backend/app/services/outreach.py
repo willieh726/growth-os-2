@@ -20,6 +20,8 @@ owner-operator who checks email from a truck. Rules:
 - Sound like a local human, not a marketer. No buzzwords, no "I hope this finds
   you well", no exclamation marks, at most one question.
 - Soft CTA (worth a quick call? / want me to send it over?). Never pushy.
+- Sign off with EXACTLY the sender name provided in the prompt. Never invent
+  a name, title, or company sign-off.
 - If an audit link is provided, reference it naturally ("I put together a free
   writeup of what I found — no strings: {audit_url}").
 Step intents:
@@ -72,7 +74,8 @@ async def generate_email(lead_id: str, intent: str = "initial_value",
                          step_number: int | None = None) -> dict:
     lead = await _lead_full(lead_id)
     audit_url = await _latest_audit_url(lead["business_id"])
-    prompt = facts_block(lead) + f"\n\nStep intent: {intent}"
+    sender = get_settings().outreach_from_name or "Will"
+    prompt = facts_block(lead) + f"\n\nStep intent: {intent}\nSender name (sign off as this): {sender}"
     if audit_url and intent in ("initial_value", "bump_with_proof"):
         prompt += f"\nAudit link: {audit_url}"
     prior = await _prior_bodies(lead_id)
