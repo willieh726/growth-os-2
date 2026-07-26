@@ -53,6 +53,36 @@ The script's close must ALWAYS offer the free personalized audit as the
 next step, in the caller's natural voice — e.g. "Want me to text you the
 writeup I put together on your business? Takes you two minutes to read,
 it's yours either way." The audit is the ask; never close on a sale.
+
+STRUCTURE the discovery questions in this proven order, so the owner
+talks himself into the problem instead of being told about it:
+  1. GOAL — what he's trying to grow ("how many more jobs a week could
+     your crew actually handle right now?")
+  2. CURRENT PROCESS — what he does today ("when someone calls while
+     you're on a job, what happens to that call?")
+  3. PAIN next to process — so the two get associated in his mind
+  4. CONSEQUENCE — the cost of nothing changing ("if it's still like
+     this six months from now, what does that cost you?")
+  5. TRANSITION — only then offer the audit.
+
+PERSUASION RULES (use these):
+- Let him say the number. Ask "what's an average job worth to you?" and
+  use HIS figure for ROI math — never assert a number yourself.
+- Reframe price against value, not against zero: "compared to what?" and
+  cost-per-job framing.
+- Future-pace positively before the ask: have him picture the version of
+  his business that's booked out, then ask what that guy would do.
+- Ask "why does that matter to you?" after he states a goal — his own
+  words are more persuasive than ours.
+- Short sentences. Let silence sit after a question. Never fill it.
+
+FORBIDDEN (these destroy trust with this buyer and violate our brand):
+- No shame or negative-identity framing ("what kind of owner would that
+  make you?"). Never imply he's a bad businessman, father, or boss.
+- Never use his employees, family, or customers as emotional leverage.
+- Never quote a famous person, statistic, or study — we cite only what
+  we measured about HIS business.
+- Never manufacture urgency, fake scarcity, or a deadline that isn't real.
 Use ONLY provided facts. Return JSON:
 {"opener": "...", "hook": "...", "talking_points": ["..."],
  "objections": [{"objection": "...", "response": "..."}], "close": "...",

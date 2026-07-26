@@ -106,6 +106,78 @@ While on the phone: "You near your truck? Google '[their trade] [their town]'
 right now. I'll wait." Let them SEE themselves missing / competitor first.
 The audit does this in writing; live is 10x stronger.
 
+### The persuasion layer (technique, not tricks)
+
+**The question order that does the work.** Never pitch into a cold ear —
+walk him through this and he arrives at the problem himself:
+
+1. **Goal** — "How many more jobs a week could your crew actually handle
+   right now?" (gets him picturing growth, and reveals capacity)
+2. **Current process** — "When a call comes in while you're on a job, what
+   happens to it?" (neutral, factual, he's just describing his day)
+3. **Pain, immediately after process** — "How often do you figure that
+   one's gone to somebody else?" (the pain lands attached to the process,
+   which is what makes him open to changing the process)
+4. **Consequence** — "If it's still working like that six months from now,
+   what does that cost you?" (his stakes, in his words)
+5. **Transition** — only now: "That's actually what I put in the writeup.
+   Want me to send it?"
+
+**Let him say every number.** "What's an average job worth to you?" Then do
+the math out loud with HIS figure: *"So one job a month covers it."* A number
+he said is a number he can't argue with. A number you assert is a number he
+discounts.
+
+**Price reframing — "compared to what?"** When he says it's expensive:
+*"Expensive compared to what?"* Then anchor against value, not zero:
+*"Two hundred a month is expensive for a dinner. It's cheap for a truck
+that stays busy. What matters isn't the number, it's whether it brings in
+work — so let's talk about whether it will."*
+
+**Anchor high, land soft.** Mention the full stack first (website + Google +
+reviews + call capture), then the single fix his audit says he needs most.
+$150/mo sounds small after $600/mo has been in the room. Never quote the
+package you expect him to buy first.
+
+**Future-pace before the ask.** *"Picture your schedule three months out,
+booked solid, phone still ringing — what would that guy do here?"* People
+decide better from confidence than from fear, and this is honest: you're
+describing the outcome you're actually selling.
+
+**"Why does that matter to you?"** After any goal he states. His answer is
+more persuasive to him than anything you could say. Then stay quiet.
+
+**Silence is a tool.** After a question, and especially after the ask, say
+nothing. Count to five in your head. Most sales are lost by the seller
+talking through the moment the buyer was deciding.
+
+**Micro-yeses before the big one.** "Makes sense?" "Fair?" "That track?"
+Small agreements build the momentum that makes the audit-yes automatic.
+
+### What we deliberately DON'T do — and why it's a business decision
+
+These are standard "dark psychology" closing tactics. They're excluded from
+every script and AI prompt on purpose:
+
+- **Shame / negative identity** ("what kind of owner would that make you?").
+  Contractors are proud operators. Insult a man's judgment and you lose the
+  deal, the referral, and the reputation — CT trades all know each other.
+- **Using his family or employees as leverage** ("their raises depend on
+  this"). Manipulative, and if he notices it later, the deal reverses at the
+  worst possible time — after he's paid.
+- **Borrowed celebrity authority** ("Bezos says..."). Our entire brand is
+  "every claim backed by something we measured." Quoting a billionaire to win
+  an argument is the same sin as inventing "you're losing 12 jobs a month."
+  We cite HIS data — that's stronger anyway, because it's about him.
+- **Manufactured urgency / fake scarcity.** We sell month-to-month with no
+  contract. Fake deadlines contradict our own pitch.
+
+The strategic logic: our differentiator IS being the honest one in a category
+famous for manipulation. Every tactic that a skeptical owner could later
+recognize as a trick converts a client into a refund, a chargeback, and a
+warning to every contractor he drinks with. Persuasion that survives being
+noticed is the only kind that scales.
+
 ### Follow-ups
 - **No answer:** voicemail ≤15 sec: "Will here — found a couple things costing
   [Business] jobs, nothing urgent, I'll text you the short version." Then text
