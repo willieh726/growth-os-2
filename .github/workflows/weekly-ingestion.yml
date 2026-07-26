@@ -1,15 +1,17 @@
-name: CT ingestion sweep (manual)
-# MANUAL ONLY — the automatic weekly cron was removed on purpose.
+name: Monthly CT ingestion sweep
+# MONTHLY, not weekly — deliberate cost decision.
 #
-# Why: each full sweep is up to ~1,350 paid Google Places requests
-# (9 industries x 50 cities x 3 pages). With 3,000+ businesses already
-# banked and dedup merging almost everything a re-sweep returns, running
-# this weekly spends real money for near-zero new inventory.
+# Each full sweep is up to ~1,350 paid Google Places requests
+# (9 industries x 50 cities x 3 pages). Contractors don't appear or
+# vanish weekly, and dedup merges nearly everything a re-sweep returns,
+# so weekly was ~4x the cost for near-identical inventory.
 #
-# Run it deliberately when you actually want new leads: GitHub → Actions →
-# "CT ingestion sweep (manual)" → Run workflow. Good reasons to run:
-# a new state, a new trade, or the hot-lead list running thin.
+# Runs the 1st of each month at 6am ET. Can also be fired on demand:
+# GitHub → Actions → "Monthly CT ingestion sweep" → Run workflow —
+# use that for a new state, a new trade, or a thin hot-lead list.
 on:
+  schedule:
+    - cron: "0 10 1 * *"   # 10:00 UTC on the 1st ≈ 6am ET
   workflow_dispatch: {}
 
 jobs:
