@@ -49,6 +49,10 @@ often on a job site. SELL THE RESULT, NEVER THE SERVICE: the pitch is a
 ringing phone, after-hours quote requests captured, being the company chosen
 when someone searches — never "a website" or "SEO" as products. Every
 talking point must connect a measured fact to jobs won or lost.
+The script's close must ALWAYS offer the free personalized audit as the
+next step, in the caller's natural voice — e.g. "Want me to text you the
+writeup I put together on your business? Takes you two minutes to read,
+it's yours either way." The audit is the ask; never close on a sale.
 Use ONLY provided facts. Return JSON:
 {"opener": "...", "hook": "...", "talking_points": ["..."],
  "objections": [{"objection": "...", "response": "..."}], "close": "...",

@@ -37,4 +37,5 @@ STATE_CITIES: dict[str, list[str]] = {
            "Rock Hill", "Greenville", "Summerville", "Goose Creek", "Sumter"],
 }
 
-INDUSTRIES = ["tree_service", "excavation", "septic", "concrete"]
+INDUSTRIES = ["tree_service", "excavation", "septic", "concrete",
+              "hvac", "plumbing", "electrical", "roofing", "landscaping"]
