@@ -18,7 +18,7 @@ async def discover_websites(bg: BackgroundTasks, limit: int = 90):
     pool = await get_pool()
     rows = await pool.fetch(
         """select id, name, city, state from businesses
-           where has_website = false and website_discovered = false
+           where has_website = false and website_checked_at is null
            order by first_seen_at limit $1""", limit,
     )
     targets = [dict(r) for r in rows]
@@ -42,6 +42,13 @@ async def discover_websites(bg: BackgroundTasks, limit: int = 90):
                     found += 1
             except Exception:
                 log.exception("discovery failed for %s", t["name"])
+            finally:
+                # Mark attempted no matter the outcome — this is what makes
+                # each batch advance instead of re-checking the same businesses.
+                await pool.execute(
+                    "update businesses set website_checked_at = now() where id=$1",
+                    t["id"],
+                )
         log.info("website discovery pass done: %s/%s found", found, len(targets))
 
     bg.add_task(_run)
