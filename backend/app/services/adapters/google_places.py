@@ -31,6 +31,11 @@ INDUSTRY_QUERIES: dict[str, str] = {
     "excavation": "excavation contractor",
     "septic": "septic tank service",
     "concrete": "concrete contractor",
+    "hvac": "HVAC contractor",
+    "plumbing": "plumber",
+    "electrical": "electrician",
+    "roofing": "roofing contractor",
+    "landscaping": "landscaping company",
 }
 
 
