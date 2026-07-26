@@ -51,7 +51,7 @@ export type Business = {
 };
 
 export const STAGES = ["new","qualified","contacted","replied","meeting","proposal","won","lost"];
-export const INDUSTRIES = ["tree_service","excavation","septic","concrete"];
+export const INDUSTRIES = ["tree_service","excavation","septic","concrete","hvac","plumbing","electrical","roofing","landscaping"];
 export const label = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 export function scoreColor(n: number | null): string {
