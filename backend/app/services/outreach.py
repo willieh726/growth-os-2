@@ -192,12 +192,20 @@ async def send_message(message_id: str) -> dict:
     if await has_replied(str(msg["lead_id"])):   # final guard
         raise ValueError("lead has replied — refusing to send")
 
+    # Plain-text signature: adds legitimacy and a callback number without the
+    # HTML/image weight that makes cold email look like a marketing blast.
+    signature = (
+        "\n\n--\n"
+        f"{s.outreach_from_name}\n"
+        "SignalSync — we make your phone ring\n"
+        "(415) 580-1702 · signalsyncagency.com"
+    )
     resend.api_key = s.resend_api_key
     sent = resend.Emails.send({
         "from": f"{s.outreach_from_name} <{s.outreach_from_email}>",
         "to": [msg["to_email"]],
         "subject": msg["subject"],
-        "text": msg["body"],
+        "text": msg["body"].rstrip() + signature,
         "reply_to": s.outreach_from_email,
     })
     await pool.execute(

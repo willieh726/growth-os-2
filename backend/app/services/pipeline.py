@@ -88,6 +88,13 @@ async def analyze_and_score(business_id: str) -> int:
     async with pool.acquire() as conn:
         async with conn.transaction():
             await save_snapshot(conn, business_id, site)
+            # Harvest a contact email off the site if we don't already have one.
+            # Only fills blanks — never overwrites a better address.
+            if site.contact_email:
+                await conn.execute(
+                    "update businesses set email = $2 where id = $1 and email is null",
+                    business_id, site.contact_email,
+                )
             facts = BusinessFacts(
                 has_website=row["has_website"], website_url=row["website_url"],
                 gbp_rating=float(row["gbp_rating"]) if row["gbp_rating"] is not None else None,

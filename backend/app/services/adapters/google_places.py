@@ -36,6 +36,8 @@ INDUSTRY_QUERIES: dict[str, str] = {
     "electrical": "electrician",
     "roofing": "roofing contractor",
     "landscaping": "landscaping company",
+    "pressure_washing": "pressure washing service",
+    "cleaning": "cleaning service",
 }
 
 

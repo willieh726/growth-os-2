@@ -29,6 +29,30 @@ QUOTE_WORDS = re.compile(
     re.IGNORECASE,
 )
 
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+# Addresses that belong to platforms/vendors, not the business itself.
+EMAIL_JUNK = (
+    "example.com", "sentry.io", "wixpress.com", "godaddy.com", "squarespace.com",
+    "wordpress.com", "cloudflare", "@2x.png", ".png", ".jpg", ".jpeg", ".gif",
+    ".webp", ".svg", "yourdomain", "domain.com", "email.com",
+)
+
+
+def _extract_email(soup, html: str) -> str | None:
+    """Best-effort contact email from a business site. mailto: links first
+    (highest confidence), then plain text. Returns None rather than guessing."""
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if href.lower().startswith("mailto:"):
+            addr = href[7:].split("?")[0].strip().lower()
+            if EMAIL_RE.fullmatch(addr) and not any(j in addr for j in EMAIL_JUNK):
+                return addr[:200]
+    for m in EMAIL_RE.finditer(html[:200000]):
+        addr = m.group(0).lower()
+        if not any(j in addr for j in EMAIL_JUNK):
+            return addr[:200]
+    return None
+
 
 @dataclass
 class SiteSignals:
@@ -46,6 +70,7 @@ class SiteSignals:
     has_schema_org: bool | None = None
     copyright_year: int | None = None
     detected_builder: str | None = None
+    contact_email: str | None = None
     page_bytes: int | None = None
     load_ms: int | None = None
     error: str | None = None
@@ -94,6 +119,8 @@ async def analyze_website(url: str | None) -> SiteSignals:
 
         years = [int(y) for y in re.findall(r"(?:©|&copy;|copyright)\s*(20\d{2})", html, re.I)]
         sig.copyright_year = max(years) if years else None
+
+        sig.contact_email = _extract_email(soup, html)
 
         low = html.lower()
         for builder, hints in BUILDER_HINTS.items():
