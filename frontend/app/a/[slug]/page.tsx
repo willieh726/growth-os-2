@@ -5,6 +5,14 @@ import ReactMarkdown from "react-markdown";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/* Never let a prospect's audit turn up in Google. These pages are private
+   between us and that business — search-indexing them would be a breach of
+   the trust the audit is meant to build. */
+export const metadata = {
+  title: "Digital Presence Audit — SignalSync",
+  robots: { index: false, follow: false, nocache: true },
+};
+
 export default async function PublicAudit({ params }: { params: { slug: string } }) {
   const res = await fetch(`${BASE}/audits/public/${params.slug}`, { cache: "no-store" });
   if (!res.ok) {
@@ -21,6 +29,17 @@ export default async function PublicAudit({ params }: { params: { slug: string }
       <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200">
         {/* Letterhead */}
         <div className="border-b-4 border-emerald-600 bg-gray-900 px-8 py-6">
+          <div className="mb-4 flex items-center gap-2">
+            <svg viewBox="0 0 64 64" className="h-6 w-6" aria-hidden="true">
+              <circle cx="20" cy="44" r="6" fill="#34D399" />
+              <path d="M20 32 A12 12 0 0 1 32 44" fill="none" stroke="#34D399" strokeWidth="4.5" strokeLinecap="round" />
+              <path d="M20 23 A21 21 0 0 1 41 44" fill="none" stroke="#34D399" strokeWidth="4.5" strokeLinecap="round" />
+              <path d="M20 14 A30 30 0 0 1 50 44" fill="none" stroke="#34D399" strokeWidth="4.5" strokeLinecap="round" />
+            </svg>
+            <span className="text-sm font-bold text-white">
+              Signal<span className="text-emerald-400">Sync</span>
+            </span>
+          </div>
           <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
             Digital Presence Audit
           </p>
@@ -29,6 +48,12 @@ export default async function PublicAudit({ params }: { params: { slug: string }
             Prepared {new Date(audit.created_at).toLocaleDateString("en-US",
               { month: "long", day: "numeric", year: "numeric" })}
           </p>
+        </div>
+
+        {/* Honesty note — the differentiator, said plainly and up front */}
+        <div className="border-b border-gray-100 bg-emerald-50 px-8 py-3 text-sm text-emerald-900">
+          Everything below comes from what we actually measured on your listing and
+          website. No estimates, no invented numbers.
         </div>
 
         <article className="px-8 py-8">
@@ -62,9 +87,30 @@ export default async function PublicAudit({ params }: { params: { slug: string }
           </ReactMarkdown>
         </article>
 
-        <footer className="border-t border-gray-100 bg-gray-50 px-8 py-5 text-sm text-gray-500">
-          Questions about anything in this audit? Just reply to my email — happy to walk
-          through it, no strings attached.
+        <footer className="border-t border-gray-100 bg-gray-50 px-8 py-6">
+          <p className="text-sm text-gray-600">
+            Questions about anything in here? Call or text me directly — happy to walk
+            through it, no strings attached. This report is yours to keep and use,
+            whether you work with us or not.
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <a
+              href="tel:+14155801702"
+              className="rounded-lg bg-emerald-600 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Call Will — (415) 580-1702
+            </a>
+            <a
+              href="mailto:will@signalsyncagency.com?subject=Question%20about%20my%20audit"
+              className="rounded-lg border border-gray-300 px-5 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-100"
+            >
+              Email instead
+            </a>
+          </div>
+          <p className="mt-5 border-t border-gray-200 pt-4 text-xs text-gray-400">
+            SignalSync · signalsyncagency.com · We make your phone ring. No contracts,
+            month to month.
+          </p>
         </footer>
       </div>
     </div>
