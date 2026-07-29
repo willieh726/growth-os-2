@@ -7,7 +7,11 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     supabase_jwt_secret: str = ""  # legacy, unused with API-based verification
-    auth_disabled: bool = True
+    # SECURE BY DEFAULT. This was previously True, which meant any deployment
+    # that simply forgot to set AUTH_DISABLED served every endpoint with no
+    # authentication at all — silently, with no error to notice. Local dev
+    # opts out explicitly via AUTH_DISABLED=true in .env.
+    auth_disabled: bool = False
 
     google_places_api_key: str = ""
     google_cse_id: str = ""      # legacy, unused — Google deprecated whole-web PSE
