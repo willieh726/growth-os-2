@@ -96,15 +96,28 @@ async def _handle_bounce(data: dict) -> dict:
 
 
 async def _handle_open(data: dict) -> dict:
+    """Log the FIRST open only. Mail clients re-fetch the tracking pixel every
+    time a message is scrolled past, so logging every event floods the lead
+    timeline with hundreds of duplicate 'Email opened' rows and buries the
+    calls and replies that actually matter."""
     email_id = data.get("email_id")
     pool = await get_pool()
     lead_id = await pool.fetchval(
         "select lead_id from outreach_messages where resend_email_id=$1", email_id
     )
-    if lead_id:
-        await pool.execute(
-            """insert into interactions (lead_id, type, channel, subject, metadata)
-               values ($1,'email_opened','email','Email opened',$2)""",
-            lead_id, {"resend_email_id": email_id},
-        )
+    if not lead_id:
+        return {"ok": True, "ignored": "unknown email_id"}
+    already = await pool.fetchval(
+        """select 1 from interactions
+           where lead_id=$1 and type='email_opened'
+             and metadata->>'resend_email_id' = $2 limit 1""",
+        lead_id, email_id,
+    )
+    if already:
+        return {"ok": True, "duplicate_open_ignored": True}
+    await pool.execute(
+        """insert into interactions (lead_id, type, channel, subject, metadata)
+           values ($1,'email_opened','email','Email opened',$2)""",
+        lead_id, {"resend_email_id": email_id},
+    )
     return {"ok": True}

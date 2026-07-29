@@ -40,8 +40,12 @@ async def promote_business(body: PromoteBody):
 
 
 @router.post("/promote-batch")
-async def promote_batch(min_score: int = 60, state: str | None = None, limit: int = 100):
-    """Bulk-promote every scored business above threshold not yet in CRM."""
+async def promote_batch(min_score: int = 60, state: str | None = None, limit: int = 10):
+    """Promote the next N best-scoring businesses not yet in the CRM.
+
+    Default is 10, not 100: promoting hundreds at once produces a pipeline
+    nobody can work, and a huge unworked list is indistinguishable from no
+    list. Callers who genuinely want a bulk load pass ?limit= explicitly."""
     pool = await get_pool()
     rows = await pool.fetch(
         """insert into leads (business_id, contact_email)

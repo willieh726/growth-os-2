@@ -20,9 +20,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Growth OS API", version="0.1.0", lifespan=lifespan)
 
+# A trailing slash or a missing localhost entry silently breaks every browser
+# request with an opaque CORS error, so normalise and include both forms.
+_front = (get_settings().frontend_url or "").rstrip("/")
+_origins = [o for o in {_front, "http://localhost:3000"} if o]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[get_settings().frontend_url],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

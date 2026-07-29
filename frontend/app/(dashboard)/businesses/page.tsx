@@ -29,14 +29,35 @@ export default function Businesses() {
     finally { setBusy(null); }
   };
 
+  /* Pull the next batch of best-scoring businesses into the pipeline.
+     Deliberately 10 at a time: a 1,000-lead pipeline is a wall, not a call
+     list. Already-promoted businesses are skipped server-side, so this is
+     safe to press again the moment the current ten are worked. */
+  const promoteNext = async () => {
+    setBusy("batch");
+    try {
+      const r = await api.post<{ promoted: number }>(
+        "/leads/promote-batch?min_score=60&limit=10",
+      );
+      alert(
+        r.promoted
+          ? `Added ${r.promoted} lead${r.promoted === 1 ? "" : "s"} to your pipeline.`
+          : "No new businesses scoring 60+ left to promote.",
+      );
+      load();
+    } finally { setBusy(null); }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Businesses <span className="text-base font-normal text-gray-400">({total})</span></h1>
         <button
-          onClick={() => api.post("/leads/promote-batch?min_score=60").then(load)}
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
-          Promote all with score ≥ 60
+          onClick={promoteNext}
+          disabled={busy === "batch"}
+          title="Adds the 10 highest-scoring businesses not already in your pipeline"
+          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          {busy === "batch" ? "Adding…" : "Promote next 10 (score ≥ 60)"}
         </button>
       </div>
 

@@ -21,9 +21,33 @@ _CACHE_TTL = 300  # seconds
 _CACHE_MAX = 1000
 
 
+def _is_local(url: str | None) -> bool:
+    return bool(url) and ("localhost" in url or "127.0.0.1" in url)
+
+
+def _evict_expired() -> None:
+    """Drop only expired entries. The old code wiped the whole cache when it
+    filled, which sent every active session back to Supabase at once."""
+    now = time.time()
+    for k in [k for k, (_, exp) in _cache.items() if exp <= now]:
+        _cache.pop(k, None)
+    if len(_cache) > _CACHE_MAX:  # still oversized: drop the soonest-to-expire
+        for k, _ in sorted(_cache.items(), key=lambda kv: kv[1][1])[: len(_cache) // 2]:
+            _cache.pop(k, None)
+
+
 async def require_user(authorization: str | None = Header(default=None)) -> dict:
     s = get_settings()
     if s.auth_disabled:
+        # Hard guard: AUTH_DISABLED opens the ENTIRE API to anyone. It exists
+        # for local dev only. If it is ever set on a deployed instance (one
+        # mistaken Railway variable), every lead, audit and score is public.
+        # Refuse rather than silently serve data.
+        if not _is_local(s.frontend_url):
+            raise HTTPException(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "AUTH_DISABLED is set on a non-local deployment — refusing to serve.",
+            )
         return {"id": "dev-user", "email": "dev@local"}
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing bearer token")
@@ -43,7 +67,7 @@ async def require_user(authorization: str | None = Header(default=None)) -> dict
     user = r.json()
 
     if len(_cache) > _CACHE_MAX:
-        _cache.clear()
+        _evict_expired()
     _cache[token] = (user, time.time() + _CACHE_TTL)
     return user
 
