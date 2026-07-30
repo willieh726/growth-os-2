@@ -43,7 +43,7 @@ async def promote_business(body: PromoteBody):
 async def promote_batch(
     min_score: int = 60, state: str | None = None, limit: int = 10,
     require_phone: bool = True, exclude_suspicious: bool = True,
-    operational_only: bool = True,
+    operational_only: bool = True, min_reviews: int = 5,
 ):
     """Promote the next N best-scoring businesses not yet in the CRM.
 
@@ -69,7 +69,17 @@ async def promote_batch(
       website and no recent reviews, so it scores HIGH — the formula rewards
       exactly the traits a dead company has. Anything not explicitly
       OPERATIONAL (closed, or status missing entirely) is excluded from the
-      call queue: an unverifiable listing is not worth a dial."""
+      call queue: an unverifiable listing is not worth a dial.
+    - min_reviews: THE most important filter, learned the hard way. The
+      scoring model awards points for ABSENCE (no website 25, zero reviews
+      15, no photos/rating 10, no form 10, no CTA 5, no SEO 10 = 75). But
+      total digital absence usually means the business is DEAD, not
+      under-marketed — five straight calls to 75-scorers hit disconnected
+      numbers. Meanwhile a thriving contractor with 20 reviews and no
+      website scores ~58 and never surfaced. Reviews are the only proxy we
+      have for "real customers are transacting with this business right
+      now". Requiring a handful inverts the queue from most-absent to
+      most-alive-but-under-marketed, which is the actual ideal customer."""
     pool = await get_pool()
     rows = await pool.fetch(
         f"""insert into leads (business_id, contact_email)
@@ -80,7 +90,12 @@ async def promote_batch(
              {"and s.phone is not null" if require_phone else ""}
              {"and not s.likely_fake_listing" if exclude_suspicious else ""}
              {"and s.business_status = 'OPERATIONAL'" if operational_only else ""}
-           order by s.opportunity_score desc limit $3
+             {f"and coalesce(s.gbp_review_count,0) >= {int(min_reviews)}" if min_reviews else ""}
+           -- Order by SIGNS OF LIFE first, then opportunity. A business with
+           -- 30 reviews and no website beats one with 0 of everything, even
+           -- though the raw score says otherwise.
+           order by s.gbp_review_count desc nulls last, s.opportunity_score desc
+           limit $3
            returning id""",
         min_score, state.upper() if state else None, limit,
     )
