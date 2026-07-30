@@ -43,6 +43,7 @@ async def promote_business(body: PromoteBody):
 async def promote_batch(
     min_score: int = 60, state: str | None = None, limit: int = 10,
     require_phone: bool = True, exclude_suspicious: bool = True,
+    operational_only: bool = True,
 ):
     """Promote the next N best-scoring businesses not yet in the CRM.
 
@@ -62,7 +63,13 @@ async def promote_batch(
       depends on the call connecting. require_phone does not catch this.
       likely_fake_listing (see migration 008) flags names that are just a
       bare street address plus a trade word — a real company essentially
-      never names itself that way."""
+      never names itself that way.
+    - operational_only: business_status was captured from Google since day
+      one but never checked anywhere. A permanently-closed business has no
+      website and no recent reviews, so it scores HIGH — the formula rewards
+      exactly the traits a dead company has. Anything not explicitly
+      OPERATIONAL (closed, or status missing entirely) is excluded from the
+      call queue: an unverifiable listing is not worth a dial."""
     pool = await get_pool()
     rows = await pool.fetch(
         f"""insert into leads (business_id, contact_email)
@@ -72,6 +79,7 @@ async def promote_batch(
              and not exists (select 1 from leads l where l.business_id = s.id)
              {"and s.phone is not null" if require_phone else ""}
              {"and not s.likely_fake_listing" if exclude_suspicious else ""}
+             {"and s.business_status = 'OPERATIONAL'" if operational_only else ""}
            order by s.opportunity_score desc limit $3
            returning id""",
         min_score, state.upper() if state else None, limit,

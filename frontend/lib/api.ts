@@ -50,6 +50,7 @@ export type Business = {
   opportunity_score: number | null;
   score_breakdown: Record<string, {points: number; max: number; reason: string}> | null;
   likely_fake_listing?: boolean;
+  business_status?: string | null;
 };
 
 export const STAGES = ["new","qualified","contacted","replied","meeting","proposal","won","lost"];

@@ -137,6 +137,18 @@ export default function Businesses() {
                     ⚠️ verify
                   </span>
                 )}
+                {b.business_status && b.business_status !== "OPERATIONAL" && (
+                  <span title={`Google reports this listing as ${b.business_status}. Excluded from the call queue.`}
+                    className="ml-2 rounded bg-gray-800 px-1.5 py-0.5 text-xs font-bold text-white">
+                    {b.business_status.replace("CLOSED_", "").toLowerCase()}
+                  </span>
+                )}
+                {!b.business_status && (
+                  <span title="Google returned no operating status for this listing — unverifiable. Excluded from the call queue."
+                    className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-800">
+                    unverified
+                  </span>
+                )}
               </td>
               <td>{label(b.industry)}</td>
               <td>{b.city ?? "—"}, {b.state}</td>

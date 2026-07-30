@@ -103,7 +103,8 @@ async def list_businesses(
     if q: where.append(f"name ilike {arg('%' + q + '%')}")
     sql = f"""select id, name, industry, city, state, phone, email, website_url,
                      has_website, gbp_rating, gbp_review_count, opportunity_score,
-                     score_breakdown, scored_at, likely_fake_listing
+                     score_breakdown, scored_at, likely_fake_listing,
+                     business_status
               from businesses_scored where {' and '.join(where)}
               order by opportunity_score desc nulls last
               limit {arg(limit)} offset {arg(offset)}"""
