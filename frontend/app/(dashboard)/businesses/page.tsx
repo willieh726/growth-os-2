@@ -10,6 +10,14 @@ export default function Businesses() {
   const [noSite, setNoSite] = useState(false);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  /* err/loading are not cosmetic. Without them a failed API call left this
+     page rendering "Businesses (0)" with an empty table — indistinguishable
+     from a genuinely empty database. That is exactly how a backend outage
+     looked like data loss. An error must never be displayed as "no results". */
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(0);
 
   const load = useCallback(() => {
     const p = new URLSearchParams();
@@ -17,15 +25,26 @@ export default function Businesses() {
     if (minScore) p.set("min_score", String(minScore));
     if (noSite) p.set("has_website", "false");
     if (q) p.set("q", q);
+    p.set("limit", String(PAGE_SIZE));
+    p.set("offset", String(page * PAGE_SIZE));
+    setLoading(true);
+    setErr("");
     api.get<{ total: number; items: Business[] }>(`/businesses?${p}`)
-      .then(r => { setItems(r.items); setTotal(r.total); });
-  }, [industry, minScore, noSite, q]);
+      .then(r => { setItems(r.items); setTotal(r.total); })
+      .catch(e => setErr(String(e)))
+      .finally(() => setLoading(false));
+  }, [industry, minScore, noSite, q, page]);
 
   useEffect(load, [load]);
 
+  // Any filter change must reset to page 0, or you can land on an offset
+  // beyond the filtered result set and see a confusing empty table.
+  useEffect(() => { setPage(0); }, [industry, minScore, noSite, q]);
+
   const promote = async (id: string) => {
     setBusy(id);
-    try { await api.post("/leads", { business_id: id }); alert("Promoted to pipeline"); }
+    try { await api.post("/leads", { business_id: id }); alert("Promoted to pipeline"); load(); }
+    catch (e) { alert(String(e)); }
     finally { setBusy(null); }
   };
 
@@ -45,7 +64,8 @@ export default function Businesses() {
           : "No new businesses scoring 60+ left to promote.",
       );
       load();
-    } finally { setBusy(null); }
+    } catch (e) { alert(String(e)); }
+    finally { setBusy(null); }
   };
 
   return (
@@ -79,6 +99,23 @@ export default function Businesses() {
           No website only
         </label>
       </div>
+
+      {err && (
+        <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4">
+          <p className="font-bold text-red-800">Couldn&apos;t load businesses</p>
+          <p className="mt-1 text-sm text-red-700">
+            This is a connection or server problem — <strong>your data is not lost.</strong>{" "}
+            Try again in a moment; if it persists, check the backend is running.
+          </p>
+          <p className="mt-2 font-mono text-xs text-red-600">{err}</p>
+          <button onClick={load}
+            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {loading && !err && <p className="text-gray-400">Loading businesses…</p>}
 
       <table className="w-full text-left text-sm">
         <thead><tr className="border-b text-gray-500">
@@ -117,6 +154,37 @@ export default function Businesses() {
           ))}
         </tbody>
       </table>
+
+      {!loading && !err && items.length === 0 && (
+        <p className="py-6 text-center text-gray-400">
+          No businesses match these filters. Try widening the score or clearing the search.
+        </p>
+      )}
+
+      {/* Pagination. Without this the page could only ever show the first 50
+          of 10,000+ businesses — the rest were unreachable in the UI. */}
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between border-t border-gray-200 pt-4 text-sm">
+          <span className="text-gray-500">
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of{" "}
+            {total.toLocaleString()}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0 || loading}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 disabled:opacity-40">
+              ← Previous
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={(page + 1) * PAGE_SIZE >= total || loading}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 disabled:opacity-40">
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
