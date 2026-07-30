@@ -40,19 +40,30 @@ async def promote_business(body: PromoteBody):
 
 
 @router.post("/promote-batch")
-async def promote_batch(min_score: int = 60, state: str | None = None, limit: int = 10):
+async def promote_batch(
+    min_score: int = 60, state: str | None = None, limit: int = 10,
+    require_phone: bool = True,
+):
     """Promote the next N best-scoring businesses not yet in the CRM.
 
     Default is 10, not 100: promoting hundreds at once produces a pipeline
     nobody can work, and a huge unworked list is indistinguishable from no
-    list. Callers who genuinely want a bulk load pass ?limit= explicitly."""
+    list. Callers who genuinely want a bulk load pass ?limit= explicitly.
+
+    require_phone defaults to True: the scoring formula awards full points
+    for EVERY missing signal, so a "ghost" listing with no phone, no email,
+    no website, zero reviews and zero photos scores identically to a real
+    contractor who simply lacks a website. A ghost is uncontactable and
+    should never occupy a slot in the call queue. Set false only for
+    non-call channels (e.g. a future mail/email-only batch)."""
     pool = await get_pool()
     rows = await pool.fetch(
-        """insert into leads (business_id, contact_email)
+        f"""insert into leads (business_id, contact_email)
            select s.id, s.email from businesses_scored s
            where coalesce(s.opportunity_score, 0) >= $1
              and ($2::text is null or s.state = $2)
              and not exists (select 1 from leads l where l.business_id = s.id)
+             {"and s.phone is not null" if require_phone else ""}
            order by s.opportunity_score desc limit $3
            returning id""",
         min_score, state.upper() if state else None, limit,

@@ -57,10 +57,30 @@ async def require_user(authorization: str | None = Header(default=None)) -> dict
     if hit and hit[1] > time.time():
         return hit[0]
 
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get(
-            f"{s.supabase_url}/auth/v1/user",
-            headers={"Authorization": f"Bearer {token}", "apikey": s.supabase_anon_key},
+    # Misconfiguration must fail as a readable message, not an httpx crash.
+    # An unhandled exception here returns a raw 500 that bypasses the CORS
+    # layer, so the browser reports a misleading "CORS policy" error and the
+    # real cause (a missing env var) is invisible from the frontend.
+    base = (s.supabase_url or "").strip().rstrip("/")
+    if not base or not s.supabase_anon_key:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Server misconfigured: SUPABASE_URL and SUPABASE_ANON_KEY must be set "
+            "for login verification.",
+        )
+    if not base.startswith(("http://", "https://")):
+        base = f"https://{base}"
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"{base}/auth/v1/user",
+                headers={"Authorization": f"Bearer {token}", "apikey": s.supabase_anon_key},
+            )
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            f"Could not reach the auth service: {type(e).__name__}",
         )
     if r.status_code != 200:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired session")
