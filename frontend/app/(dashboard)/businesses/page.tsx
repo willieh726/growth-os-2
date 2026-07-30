@@ -92,7 +92,15 @@ export default function Businesses() {
                   {b.opportunity_score ?? "—"}
                 </span>
               </td>
-              <td className="font-medium">{b.name}</td>
+              <td className="font-medium">
+                {b.name}
+                {b.likely_fake_listing && (
+                  <span title="Name looks like a bare street address — possible fake/squatted listing. Verify on Google Maps before calling."
+                    className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-bold text-red-700">
+                    ⚠️ verify
+                  </span>
+                )}
+              </td>
               <td>{label(b.industry)}</td>
               <td>{b.city ?? "—"}, {b.state}</td>
               <td>{b.has_website

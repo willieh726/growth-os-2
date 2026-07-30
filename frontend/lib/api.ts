@@ -35,6 +35,7 @@ export type Lead = {
   opportunity_score: number | null; score_breakdown: Record<string, {points: number; max: number; reason: string}> | null;
   interaction_count: number; last_activity_at: string | null;
   interactions?: Interaction[];
+  likely_fake_listing?: boolean;
 };
 
 export type Interaction = {
@@ -48,6 +49,7 @@ export type Business = {
   has_website: boolean; gbp_rating: number | null; gbp_review_count: number | null;
   opportunity_score: number | null;
   score_breakdown: Record<string, {points: number; max: number; reason: string}> | null;
+  likely_fake_listing?: boolean;
 };
 
 export const STAGES = ["new","qualified","contacted","replied","meeting","proposal","won","lost"];

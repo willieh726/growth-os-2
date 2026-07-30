@@ -49,6 +49,22 @@ export default function LeadDetail() {
           </p>
         </div>
 
+        {lead.likely_fake_listing && (
+          <div className="rounded-xl border-2 border-red-400 bg-red-50 p-4">
+            <p className="font-bold text-red-800">
+              ⚠️ Possible fake/squatted listing — verify before calling
+            </p>
+            <p className="mt-1 text-sm text-red-700">
+              This business&apos;s name is just a street address plus a trade word
+              (e.g. &quot;909 Washington St Plumbing&quot;) — a pattern common to
+              scam listings squatting at a real address (often a big-box store)
+              to steal calls meant for that address&apos;s real business. Look the
+              address up on Google Maps before dialing. If it&apos;s not a real,
+              independent business at that spot, move to the next lead.
+            </p>
+          </div>
+        )}
+
         <section className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-3 font-semibold">Why this score</h2>
           <ul className="space-y-1 text-sm">
