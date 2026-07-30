@@ -110,7 +110,14 @@ async def list_leads(stage: str | None = None, limit: int = 100, offset: int = 0
     rows = await pool.fetch(
         """select * from leads_full
            where ($1::text is null or stage = $1::lead_stage)
-           order by opportunity_score desc nulls last limit $2 offset $3""",
+           -- Sort by SIGNS OF LIFE, not raw score. The score rewards absence
+           -- (no site / no reviews / no photos = 75), which ranks dead
+           -- businesses above thriving ones. Review count is the only proxy
+           -- we have for "real customers are transacting here right now", so
+           -- the most-alive lead must appear first in the call queue.
+           order by gbp_review_count desc nulls last,
+                    opportunity_score desc nulls last
+           limit $2 offset $3""",
         stage, limit, offset,
     )
     return [dict(r) for r in rows]
