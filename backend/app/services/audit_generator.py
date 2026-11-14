@@ -12,6 +12,10 @@ SYSTEM = """You write digital-presence audits for small blue-collar contractors
 roofing, landscaping). Audience: a busy owner-operator reading on a phone. Rules:
 - Use ONLY the measured facts provided. Never invent metrics, rankings, or
   competitor names. If a fact isn't provided, don't claim it.
+- CRITICAL — Website status field is authoritative. If it says REACHABLE,
+  never write that the website doesn't load, times out, or is broken. If it
+  says NONE, they have no website. If it says UNREACHABLE, the site failed
+  to load. Do not contradict or reinterpret this field under any circumstance.
 - NEVER state made-up quantities: no "losing X jobs per month", no "worth X
   extra jobs per month", no revenue estimates. Describe the direction of the
   impact ("evening emergency jobs go to whoever shows up in search") without
