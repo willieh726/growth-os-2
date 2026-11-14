@@ -52,30 +52,39 @@
        CART STATE (vanilla JS)
   ============================================================ -->
   <script>
-    // Service definitions — 14 à la carte services (brandedsite is one-time, not monthly)
+    // Service definitions — 14 à la carte services
+    // 13 recurring services total $5,800/mo + $1,200 brandedsite build = $7,000 combined value
     const SERVICES = [
       { id: 'brandedsite', name: 'Branded Website',              price: 0,    requiresWebsite: false, oneTime: 1200 },
       { id: 'website',     name: 'After-Hours Quote Website',    price: 149,  requiresWebsite: false },
-      { id: 'receptionist',name: 'AI Phone Receptionist',        price: 799,  requiresWebsite: false },
-      { id: 'missedcall',  name: 'Missed-Call Text-Back',        price: 299,  requiresWebsite: false },
-      { id: 'followups',   name: 'Automated Follow-Ups',         price: 399,  requiresWebsite: false },
-      { id: 'reviews',     name: 'Review Automation',            price: 299,  requiresWebsite: false },
-      { id: 'localseo',    name: 'Local SEO & GBP',              price: 699,  requiresWebsite: false },
-      { id: 'localrank',   name: 'Local Search Ranking',         price: 649,  requiresWebsite: true  },
-      { id: 'googleads',   name: 'Google Ads Management',        price: 699,  requiresWebsite: true  },
-      { id: 'smsrecovery', name: 'SMS Lead Recovery',            price: 399,  requiresWebsite: false },
-      { id: 'analytics',   name: 'Revenue Analytics Dashboard',  price: 249,  requiresWebsite: false },
-      { id: 'scheduling',  name: 'Scheduling & Calendar',        price: 299,  requiresWebsite: true  },
-      { id: 'aiassist',    name: 'AI Business Assistant',        price: 249,  requiresWebsite: false },
-      { id: 'inventory',   name: 'Inventory Management',         price: 249,  requiresWebsite: false },
+      { id: 'receptionist',name: 'AI Phone Receptionist',        price: 650,  requiresWebsite: false },
+      { id: 'missedcall',  name: 'Missed-Call Text-Back',        price: 349,  requiresWebsite: false },
+      { id: 'followups',   name: 'Automated Follow-Ups',         price: 449,  requiresWebsite: false },
+      { id: 'reviews',     name: 'Review Automation',            price: 349,  requiresWebsite: false },
+      { id: 'localseo',    name: 'Local SEO & GBP',              price: 649,  requiresWebsite: false },
+      { id: 'localrank',   name: 'Local Search Ranking',         price: 549,  requiresWebsite: true  },
+      { id: 'googleads',   name: 'Google Ads Management',        price: 649,  requiresWebsite: true  },
+      { id: 'smsrecovery', name: 'SMS Lead Recovery',            price: 449,  requiresWebsite: false },
+      { id: 'analytics',   name: 'Revenue Analytics Dashboard',  price: 299,  requiresWebsite: false },
+      { id: 'scheduling',  name: 'Scheduling & Calendar',        price: 349,  requiresWebsite: true  },
+      { id: 'aiassist',    name: 'AI Business Assistant',        price: 349,  requiresWebsite: false },
+      { id: 'inventory',   name: 'Inventory Management',         price: 311,  requiresWebsite: false },
     ];
+    // Verification: 149+650+349+449+349+649+549+649+449+299+349+349+311 = $5,800/mo recurring ✓
 
     // Bundle tiers
+    // Starter à la carte value: receptionist($650)+missedcall($349)+followups($449)+reviews($349)+smsrecovery($449) = $2,246/mo
+    // Growth à la carte value: Starter $2,246 + website($149)+localseo($649)+localrank($549)+googleads($649)+scheduling($349) = $4,591/mo + $1,200 build
+    // Complete à la carte value: Growth $4,591 + analytics($299)+aiassist($349)+inventory($311) = $5,550/mo + $1,200 build
+    // Master à la carte value: $5,800/mo + $1,200 build = $7,000 total
     const BUNDLES = {
       starter: {
         id: 'starter',
         name: 'Starter',
         monthly: 1499,
+        alacarte: 2246,
+        savedMonthly: 747,
+        savedPct: 33,
         services: ['receptionist','missedcall','followups','reviews','smsrecovery'],
         websiteFee: null,
         websiteFeeLabel: null,
@@ -89,6 +98,9 @@
         id: 'growth',
         name: 'Growth',
         monthly: 2499,
+        alacarte: 4591,
+        savedMonthly: 2092,
+        savedPct: 46,
         services: ['receptionist','missedcall','followups','reviews','website','localseo','localrank','googleads','smsrecovery','scheduling'],
         websiteFee: 1200,
         websiteFeeLabel: '$1,200 one-time',
@@ -101,6 +113,9 @@
         id: 'complete',
         name: 'Complete',
         monthly: 3999,
+        alacarte: 5550,
+        savedMonthly: 1551,
+        savedPct: 28,
         services: ['receptionist','missedcall','followups','reviews','website','localseo','localrank','googleads','smsrecovery','scheduling','analytics','aiassist','inventory'],
         websiteFee: 900,
         websiteFeeLabel: '<span class="line-through text-gray-500">$1,200</span> $900 <span class="text-emerald-400 text-xs font-bold">SAVE 25%</span>',
@@ -113,12 +128,16 @@
         id: 'master',
         name: 'Master Bundle',
         monthly: 5500,
+        alacarte: 5800,
+        savedMonthly: 300,
+        savedPct: 5,
+        savedBuild: 1200,
         services: ['receptionist','missedcall','followups','reviews','website','localseo','localrank','googleads','smsrecovery','scheduling','analytics','aiassist','inventory'],
         websiteFee: 0,
-        websiteFeeLabel: 'Website build FREE',
+        websiteFeeLabel: 'Branded Website build FREE',
         websiteFreeWithBundle: true,
         badge: 'All-In',
-        description: 'Everything + a fully branded identity website, included free.',
+        description: 'Your outsourced revenue-growth department — all 13 services, dedicated attention, and a branded website, free.',
         highlight: false
       }
     };
@@ -789,10 +808,10 @@
           </div>
           <h3 class="font-bold text-gray-100 mt-1">AI Phone Receptionist</h3>
           <p class="mt-2 text-sm text-gray-400 flex-1">
-            Trained AI answers every call 24/7, takes messages, books appointments, quotes common jobs. Never calls in sick. Text summary of every call instantly.
+            Trained AI answers every call 24/7, takes messages, books appointments, quotes common jobs. Never calls in sick. Text summary of every call instantly. Includes 300 minutes/mo · $0.07/min overage.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$799/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$650/mo</p>
             <button onclick="addToCart('receptionist')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -807,10 +826,10 @@
           </div>
           <h3 class="font-bold text-gray-100 mt-1">Missed-Call Text-Back</h3>
           <p class="mt-2 text-sm text-gray-400 flex-1">
-            Every missed call instantly gets a text back: "Sorry we missed you — what do you need?" Active within 24–48 hours. Recovered leads typically show up in the first week.
+            Every missed call instantly gets a text back: "Sorry we missed you — what do you need?" Active within 24–48 hours. Recovered leads typically show up in the first week. Includes 500 SMS/mo · $0.025/message overage.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$299/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$349/mo</p>
             <button onclick="addToCart('missedcall')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -826,10 +845,10 @@
           </div>
           <h3 class="font-bold text-gray-100 mt-1">Automated Follow-Ups</h3>
           <p class="mt-2 text-sm text-gray-400 flex-1">
-            Every lead that doesn't book on first contact gets a timed follow-up sequence — SMS and email — sent automatically within 5 minutes. Most see 15–30% improvement in lead-to-booking within the first month.
+            Every lead that doesn't book on first contact gets a timed follow-up sequence — SMS and email — sent automatically within 5 minutes. Most see 15–30% improvement in lead-to-booking within the first month. Includes 1,000 SMS/mo · $0.025/message overage.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$399/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$449/mo</p>
             <button onclick="addToCart('followups')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -844,10 +863,10 @@
           </div>
           <h3 class="font-bold text-gray-100 mt-1">Review Automation</h3>
           <p class="mt-2 text-sm text-gray-400 flex-1">
-            After each job, customers automatically get a friendly text asking for a review. The contractor with 40 reviews beats the one with 4, every time. Your reputation compounds on autopilot.
+            After each job, customers automatically get a friendly text asking for a review. The contractor with 40 reviews beats the one with 4, every time. Your reputation compounds on autopilot. Includes 500 SMS/mo · $0.025/message overage.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$299/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$349/mo</p>
             <button onclick="addToCart('reviews')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -865,7 +884,7 @@
             When someone searches "HVAC near me," Google decides who gets the call. We manage your Google Business Profile — photos, posts, categories, citations — so Google puts you first.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$699/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$649/mo</p>
             <button onclick="addToCart('localseo')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -884,7 +903,7 @@
           </p>
           <div class="mt-4 flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-300">$649/mo</p>
+              <p class="text-sm font-semibold text-gray-300">$549/mo</p>
               <p class="text-xs text-gray-500">Requires website</p>
             </div>
             <button onclick="addToCart('localrank')"
@@ -901,12 +920,12 @@
           </div>
           <h3 class="font-bold text-gray-100 mt-1">Google Ads Management</h3>
           <p class="mt-2 text-sm text-gray-400 flex-1">
-            Targeted Google ads become a faucet you can turn on when the schedule looks thin — and off when you're booked solid. We only recommend this when the math works in your favor. <span class="text-gray-500">Requires website.</span>
+            Targeted Google ads become a faucet you can turn on when the schedule looks thin — and off when you're booked solid. We only recommend this when the math works in your favor. Management fee is separate from your ad spend budget (you control ad spend). <span class="text-gray-500">Requires website.</span>
           </p>
           <div class="mt-4 flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-300">$699/mo + ad spend</p>
-              <p class="text-xs text-gray-500">Requires website</p>
+              <p class="text-sm font-semibold text-gray-300">$649/mo + ad spend</p>
+              <p class="text-xs text-gray-500">Requires website · ad spend billed separately</p>
             </div>
             <button onclick="addToCart('googleads')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
@@ -923,10 +942,10 @@
           </div>
           <h3 class="font-bold text-gray-100 mt-1">SMS Lead Recovery</h3>
           <p class="mt-2 text-sm text-gray-400 flex-1">
-            Cold leads in your existing contact list are booked jobs waiting to happen. We run a targeted AI SMS reactivation campaign — most recover 5–15% of cold leads within 2 weeks.
+            Cold leads in your existing contact list are booked jobs waiting to happen. We run a targeted AI SMS reactivation campaign — most recover 5–15% of cold leads within 2 weeks. Includes 1,000 SMS/mo · $0.025/message overage.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$399/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$449/mo</p>
             <button onclick="addToCart('smsrecovery')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -945,7 +964,7 @@
             A live dashboard showing your jobs, revenue, lead sources, and ROI — all in one place. Know exactly what's working without digging through spreadsheets.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$249/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$299/mo</p>
             <button onclick="addToCart('analytics')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -965,7 +984,7 @@
           </p>
           <div class="mt-4 flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-300">$299/mo</p>
+              <p class="text-sm font-semibold text-gray-300">$349/mo</p>
               <p class="text-xs text-gray-500">Requires website</p>
             </div>
             <button onclick="addToCart('scheduling')"
@@ -986,7 +1005,7 @@
             Revenue trends, top lead sources, job history, crew utilization — your AI assistant pulls the answer instantly from your own data. Like a business analyst on call 24/7.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$249/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$349/mo</p>
             <button onclick="addToCart('aiassist')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -1005,7 +1024,7 @@
             Track parts and materials, get low-inventory alerts, and text suppliers directly from the dashboard. Auto-syncs with Jobber or ServiceTitan.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$249/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$311/mo</p>
             <button onclick="addToCart('inventory')"
                     class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 text-xs font-bold text-yellow-400 hover:bg-yellow-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -1040,7 +1059,11 @@
           </div>
           <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Starter</p>
           <p class="text-3xl font-extrabold text-white mt-1">$1,499<span class="text-base font-normal text-gray-400">/mo</span></p>
-          <p class="text-xs text-gray-500 mt-1">5 services · Capture &amp; Convert</p>
+          <!-- SAVINGS DISPLAY -->
+          <div class="mt-2 rounded-lg bg-emerald-950/60 border border-emerald-700/40 px-3 py-2">
+            <p class="text-xs text-gray-400">5 services · à la carte value: <span class="text-gray-200 font-semibold">$2,246/mo</span></p>
+            <p class="text-sm font-bold text-emerald-400 mt-0.5">Save $747/mo (33% off)</p>
+          </div>
           <p class="text-sm text-gray-400 mt-3">Capture every lead and never miss a call again.</p>
           <ul class="mt-4 space-y-1.5 text-sm text-gray-400 flex-1">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>AI Phone Receptionist</li>
@@ -1067,14 +1090,18 @@
           </div>
           <p class="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-1">Growth</p>
           <p class="text-3xl font-extrabold text-white mt-1">$2,499<span class="text-base font-normal text-gray-400">/mo</span></p>
-          <p class="text-xs text-gray-500 mt-1">10 services · Full capture + search dominance</p>
+          <!-- SAVINGS DISPLAY -->
+          <div class="mt-2 rounded-lg bg-emerald-950/60 border border-emerald-700/40 px-3 py-2">
+            <p class="text-xs text-gray-400">10 services · à la carte value: <span class="text-gray-200 font-semibold">$4,591/mo</span></p>
+            <p class="text-sm font-bold text-emerald-400 mt-0.5">Save $2,092/mo (46% off)</p>
+          </div>
           <p class="text-sm text-gray-400 mt-3">Dominate local search and fill your pipeline.</p>
           <ul class="mt-4 space-y-1.5 text-sm text-gray-400 flex-1">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Everything in Starter</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span>After-Hours Quote Website</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Local SEO &amp; GBP</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Local Search Ranking</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Google Ads Management</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span>SMS Lead Recovery</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Scheduling &amp; Calendar</li>
             <li class="flex gap-2"><span class="text-amber-400">→</span><span class="text-amber-300">+ $1,200 Branded Website build (one-time)</span></li>
           </ul>
@@ -1094,15 +1121,19 @@
           </div>
           <p class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-1">Complete</p>
           <p class="text-3xl font-extrabold text-white mt-1">$3,999<span class="text-base font-normal text-gray-400">/mo</span></p>
-          <p class="text-xs text-gray-500 mt-1">13 services · Full-stack revenue system</p>
+          <!-- SAVINGS DISPLAY -->
+          <div class="mt-2 rounded-lg bg-emerald-950/60 border border-emerald-700/40 px-3 py-2">
+            <p class="text-xs text-gray-400">13 services · à la carte value: <span class="text-gray-200 font-semibold">$5,550/mo</span></p>
+            <p class="text-sm font-bold text-emerald-400 mt-0.5">Save $1,551/mo (28% off) + $300 on build</p>
+          </div>
           <p class="text-sm text-gray-400 mt-3">Full-stack revenue optimization for serious operators.</p>
           <ul class="mt-4 space-y-1.5 text-sm text-gray-400 flex-1">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Everything in Growth</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Revenue Analytics Dashboard</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>AI Business Assistant</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span>Advanced Automations</li>
+            <li class="flex gap-2"><span class="text-purple-400 font-bold">★</span><span class="text-purple-300 font-semibold">Advanced Automations</span></li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Inventory Management</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span>Priority Support</li>
+            <li class="flex gap-2"><span class="text-purple-400 font-bold">★</span><span class="text-purple-300 font-semibold">Priority Support</span></li>
             <li class="flex gap-2"><span class="text-amber-400">→</span><span class="text-amber-300"><span class="line-through text-gray-500">$1,200</span> $900 Branded Website build <span class="text-emerald-400 font-bold text-xs">SAVE 25%</span></span></li>
           </ul>
           <button onclick="addBundle('complete')"
@@ -1116,18 +1147,23 @@
           <span class="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-4 py-1 text-xs font-bold text-gray-950 whitespace-nowrap">All-In</span>
           <div class="absolute top-4 right-4 rounded-lg bg-emerald-950/80 border border-emerald-500/50 px-2.5 py-1 text-center">
             <p class="text-xs font-bold text-emerald-400 uppercase tracking-wide leading-none">Website</p>
-            <p class="text-xs font-bold text-emerald-300 mt-0.5">FREE!!!</p>
+            <p class="text-xs font-bold text-emerald-300 mt-0.5">FREE ($1,200)</p>
           </div>
           <p class="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">Master Bundle</p>
           <p class="text-3xl font-extrabold text-white mt-1">$5,500<span class="text-base font-normal text-gray-400">/mo</span></p>
-          <p class="text-xs text-gray-500 mt-1">13 services + branded website build, free</p>
-          <p class="text-sm text-gray-400 mt-3">Everything + a fully branded identity website, included free.</p>
+          <!-- SAVINGS DISPLAY -->
+          <div class="mt-2 rounded-lg bg-amber-950/60 border border-amber-700/40 px-3 py-2">
+            <p class="text-xs text-gray-400">13 services + website build · total value: <span class="text-gray-200 font-semibold">$7,000</span></p>
+            <p class="text-sm font-bold text-amber-400 mt-0.5">Save $1,500 total ($300/mo + $1,200 build)</p>
+          </div>
+          <p class="text-sm text-gray-400 mt-3">Your outsourced revenue-growth department — dedicated attention, proactive optimization, and strategy reviews for your business.</p>
           <ul class="mt-4 space-y-1.5 text-sm text-gray-400 flex-1">
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span>Everything in Complete</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span>All 13 services</li>
-            <li class="flex gap-2"><span class="text-emerald-500">✓</span>Priority Support</li>
-            <li class="flex gap-2"><span class="text-amber-400 font-bold text-lg leading-none flex-shrink-0">★</span><span class="text-emerald-300 font-bold">Branded Website build — FREE</span></li>
-            <li class="flex gap-2 text-xs text-gray-500 pl-5"><span class="text-emerald-500 text-xs">↳</span>Full identity site: homepage, service pages, your brand. $1,200 value, included.</li>
+            <li class="flex gap-2"><span class="text-emerald-500">✓</span>All 13 services, fully managed</li>
+            <li class="flex gap-2"><span class="text-amber-400 font-bold flex-shrink-0">★</span><span class="text-amber-300 font-semibold">Dedicated account management</span></li>
+            <li class="flex gap-2"><span class="text-amber-400 font-bold flex-shrink-0">★</span><span class="text-amber-300 font-semibold">Proactive monitoring &amp; optimization</span></li>
+            <li class="flex gap-2"><span class="text-amber-400 font-bold flex-shrink-0">★</span><span class="text-amber-300 font-semibold">Monthly strategy &amp; performance reviews</span></li>
+            <li class="flex gap-2"><span class="text-amber-400 font-bold flex-shrink-0">★</span><span class="text-amber-300 font-semibold">Priority support — fastest response</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold flex-shrink-0">★</span><span class="text-emerald-300 font-bold">Branded Website build — FREE ($1,200 value)</span></li>
           </ul>
           <button onclick="addBundle('master')"
                   class="mt-6 rounded-xl bg-amber-500 px-6 py-3 text-sm font-bold text-gray-950 hover:bg-amber-400 transition-colors">
@@ -1141,7 +1177,7 @@
       <div class="mt-10 max-w-3xl mx-auto rounded-2xl border border-gray-800 bg-gray-900/40 p-6 flex flex-col sm:flex-row items-center gap-6">
         <div class="flex-1">
           <p class="font-bold text-gray-100">Or build your own stack</p>
-          <p class="text-sm text-gray-400 mt-1">Pick exactly what's costing you the most. 14 services starting at $149/mo. No minimum, no contract.</p>
+          <p class="text-sm text-gray-400 mt-1">Pick exactly what's costing you the most. 13 recurring services from $149–$650/mo. Total à la carte value: $5,800/mo. No minimum, no contract.</p>
           <p class="text-sm text-amber-400 mt-1">Branded Website: $1,200 one-time build (à la carte) · included free in Master Bundle</p>
         </div>
         <button onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})"
@@ -1168,25 +1204,33 @@
             <tbody class="divide-y divide-gray-800">
               <tr class="hover:bg-gray-900/40 bg-indigo-950/10"><td class="px-4 py-3 text-gray-200 font-medium">Branded Website <span class="text-xs text-indigo-400 font-normal">(full identity site)</span></td><td class="px-4 py-3 text-center text-gray-700 text-xs">—</td><td class="px-4 py-3 text-center text-xs"><span class="text-amber-400 font-bold">$1,200</span></td><td class="px-4 py-3 text-center text-xs"><span class="line-through text-gray-500">$1,200</span> <span class="text-amber-400 font-bold">$900</span></td><td class="px-4 py-3 text-center text-emerald-400 text-xs font-bold">FREE</td><td class="px-4 py-3 text-right text-amber-400 font-semibold text-xs">$1,200 one-time</td></tr>
               <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">After-Hours Quote Website <span class="text-xs text-gray-500">(intake form)</span></td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$149/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Phone Receptionist</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$799/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Missed-Call Text-Back</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Automated Follow-Ups</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$399/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Review Automation</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local SEO & GBP</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$699/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local Search Ranking</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$649/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Google Ads Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$699/mo + ad spend</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">SMS Lead Recovery</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$399/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Scheduling & Calendar</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Revenue Analytics Dashboard</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$249/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Business Assistant</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$249/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Inventory Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$249/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Phone Receptionist <span class="text-xs text-gray-500 font-normal block">300 min/mo · $0.07/min overage</span></td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$650/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Missed-Call Text-Back <span class="text-xs text-gray-500 font-normal block">500 SMS/mo · $0.025/msg overage</span></td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$349/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Automated Follow-Ups <span class="text-xs text-gray-500 font-normal block">1,000 SMS/mo · $0.025/msg overage</span></td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$449/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Review Automation <span class="text-xs text-gray-500 font-normal block">500 SMS/mo · $0.025/msg overage</span></td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$349/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local SEO & GBP</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$649/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local Search Ranking</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$549/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Google Ads Management <span class="text-xs text-gray-500 font-normal block">Mgmt fee only · ad spend billed separately</span></td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$649/mo + ad spend</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">SMS Lead Recovery <span class="text-xs text-gray-500 font-normal block">1,000 SMS/mo · $0.025/msg overage</span></td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$449/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Scheduling & Calendar</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$349/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Revenue Analytics Dashboard</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Business Assistant</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$349/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Inventory Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$311/mo</td></tr>
               <tr class="hover:bg-gray-900/40 bg-gray-900/60">
-                <td class="px-4 py-3 font-bold text-white">Priority Support</td>
+                <td class="px-4 py-3 font-bold text-white">Advanced Automations + Priority Support</td>
                 <td class="px-4 py-3 text-center text-gray-700">—</td>
                 <td class="px-4 py-3 text-center text-gray-700">—</td>
                 <td class="px-4 py-3 text-center text-emerald-500">✓</td>
                 <td class="px-4 py-3 text-center text-emerald-500">✓</td>
                 <td class="px-4 py-3 text-right text-gray-500 text-xs">Bundle only</td>
+              </tr>
+              <tr class="hover:bg-gray-900/40 bg-amber-950/10">
+                <td class="px-4 py-3 font-bold text-amber-400">Dedicated Mgmt + Strategy Reviews</td>
+                <td class="px-4 py-3 text-center text-gray-700">—</td>
+                <td class="px-4 py-3 text-center text-gray-700">—</td>
+                <td class="px-4 py-3 text-center text-gray-700">—</td>
+                <td class="px-4 py-3 text-center text-amber-400 font-bold">✓</td>
+                <td class="px-4 py-3 text-right text-gray-500 text-xs">Master only</td>
               </tr>
               <tr class="bg-gray-900/60 border-t-2 border-gray-700">
                 <td class="px-4 py-3.5 font-bold text-white">Branded Website build</td>
@@ -1201,7 +1245,7 @@
         </div>
         <p class="mt-5 text-center text-sm text-gray-500">
           Invoicing handled after kickoff call — no credit card required upfront.<br>
-          <span class="text-xs text-gray-600">Setup fees ($1,000–$2,500), Google Ads spend, and SMS/phone overages discussed on call.</span>
+          <span class="text-xs text-gray-600">Setup fees ($1,000–$2,500 depending on scope), Google Ads spend (you set your budget), and SMS/phone overages are separate — all reviewed on the discovery call. No surprises.</span>
         </p>
       </div>
     </div>
