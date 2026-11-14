@@ -68,14 +68,14 @@
       { id: 'analytics',   name: 'Revenue Analytics Dashboard',  price: 299,  requiresWebsite: false },
       { id: 'scheduling',  name: 'Scheduling & Calendar',        price: 349,  requiresWebsite: true  },
       { id: 'aiassist',    name: 'AI Business Assistant',        price: 349,  requiresWebsite: false },
-      { id: 'inventory',   name: 'Inventory Management',         price: 311,  requiresWebsite: false },
+      { id: 'inventory',   name: 'Inventory Management',         price: 561,  requiresWebsite: false },
     ];
-    // Verification: 149+650+349+449+349+649+549+649+449+299+349+349+311 = $5,800/mo recurring ✓
+    // Verification: 149+650+349+449+349+649+549+649+449+299+349+349+561 = $5,800/mo recurring ✓
 
     // Bundle tiers
     // Starter à la carte value: receptionist($650)+missedcall($349)+followups($449)+reviews($349)+smsrecovery($449) = $2,246/mo
     // Growth à la carte value: Starter $2,246 + website($149)+localseo($649)+localrank($549)+googleads($649)+scheduling($349) = $4,591/mo + $1,200 build
-    // Complete à la carte value: Growth $4,591 + analytics($299)+aiassist($349)+inventory($311) = $5,550/mo + $1,200 build
+    // Complete à la carte value: Growth $4,591 + analytics($299)+aiassist($349)+inventory($561) = $5,800/mo + $1,200 build
     // Master à la carte value: $5,800/mo + $1,200 build = $7,000 total
     const BUNDLES = {
       starter: {
@@ -113,9 +113,9 @@
         id: 'complete',
         name: 'Complete',
         monthly: 3999,
-        alacarte: 5550,
-        savedMonthly: 1551,
-        savedPct: 28,
+        alacarte: 5800,
+        savedMonthly: 1801,
+        savedPct: 31,
         services: ['receptionist','missedcall','followups','reviews','website','localseo','localrank','googleads','smsrecovery','scheduling','analytics','aiassist','inventory'],
         websiteFee: 900,
         websiteFeeLabel: '<span class="line-through text-gray-500">$1,200</span> $900 <span class="text-emerald-400 text-xs font-bold">SAVE 25%</span>',
@@ -1024,7 +1024,7 @@
             Track parts and materials, get low-inventory alerts, and text suppliers directly from the dashboard. Auto-syncs with Jobber or ServiceTitan.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$311/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$561/mo</p>
             <button onclick="addToCart('inventory')"
                     class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 text-xs font-bold text-yellow-400 hover:bg-yellow-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -1124,7 +1124,7 @@
           <!-- SAVINGS DISPLAY -->
           <div class="mt-2 rounded-lg bg-emerald-950/60 border border-emerald-700/40 px-3 py-2">
             <p class="text-xs text-gray-400">13 services · à la carte value: <span class="text-gray-200 font-semibold">$5,550/mo</span></p>
-            <p class="text-sm font-bold text-emerald-400 mt-0.5">Save $1,551/mo (28% off) + $300 on build</p>
+            <p class="text-sm font-bold text-emerald-400 mt-0.5">Save $1,801/mo (31% off) + $300 on build</p>
           </div>
           <p class="text-sm text-gray-400 mt-3">Full-stack revenue optimization for serious operators.</p>
           <ul class="mt-4 space-y-1.5 text-sm text-gray-400 flex-1">
@@ -1215,7 +1215,7 @@
               <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Scheduling & Calendar</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$349/mo</td></tr>
               <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Revenue Analytics Dashboard</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
               <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Business Assistant</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$349/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Inventory Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$311/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Inventory Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$561/mo</td></tr>
               <tr class="hover:bg-gray-900/40 bg-gray-900/60">
                 <td class="px-4 py-3 font-bold text-white">Advanced Automations + Priority Support</td>
                 <td class="px-4 py-3 text-center text-gray-700">—</td>
@@ -1397,7 +1397,7 @@
         </svg>
         Signal<span class="text-emerald-400">Sync</span> — Stop Losing Revenue. Start Capturing Opportunity.
       </div>
-      <div>Bay Area · serving businesses nationwide · <a href="tel:+14155801702" class="hover:text-gray-300">(415) 580-1702</a> · <a href="mailto:will@signalsyncagency.com" class="hover:text-gray-300">will@signalsyncagency.com</a></div>
+      <div>Bay Area · serving businesses nationwide · <a href="tel:+14155801702" class="text-gray-300 hover:text-white font-medium">(415) 580-1702</a> · <a href="mailto:will@signalsyncagency.com" class="hover:text-gray-300">will@signalsyncagency.com</a></div>
     </div>
   </footer>
 
