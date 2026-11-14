@@ -29,7 +29,7 @@
     "email": "will@signalsyncagency.com",
     "founder": { "@type": "Person", "name": "Will Hoge" },
     "areaServed": { "@type": "Country", "name": "United States" },
-    "priceRange": "$110 - $4,999",
+    "priceRange": "$149 - $5,500",
     "slogan": "Stop Losing Revenue. Start Capturing Opportunity."
   }
   </script>
@@ -52,21 +52,22 @@
        CART STATE (vanilla JS)
   ============================================================ -->
   <script>
-    // Service definitions — 13 à la carte services
+    // Service definitions — 14 à la carte services (brandedsite is one-time, not monthly)
     const SERVICES = [
-      { id: 'website',     name: 'After-Hours Quote Website',    price: 110,  requiresWebsite: false, websiteBuildCost: 1200 },
-      { id: 'receptionist',name: 'AI Phone Receptionist',        price: 599,  requiresWebsite: false },
-      { id: 'missedcall',  name: 'Missed-Call Text-Back',        price: 199,  requiresWebsite: false },
-      { id: 'followups',   name: 'Automated Follow-Ups',         price: 299,  requiresWebsite: false },
-      { id: 'reviews',     name: 'Review Automation',            price: 199,  requiresWebsite: false },
-      { id: 'localseo',    name: 'Local SEO & GBP',              price: 499,  requiresWebsite: false },
-      { id: 'localrank',   name: 'Local Search Ranking',         price: 499,  requiresWebsite: true  },
-      { id: 'googleads',   name: 'Google Ads Management',        price: 499,  requiresWebsite: true  },
-      { id: 'smsrecovery', name: 'SMS Lead Recovery',            price: 299,  requiresWebsite: false },
-      { id: 'analytics',   name: 'Revenue Analytics Dashboard',  price: 199,  requiresWebsite: false },
-      { id: 'scheduling',  name: 'Scheduling & Calendar',        price: 199,  requiresWebsite: true  },
-      { id: 'aiassist',    name: 'AI Business Assistant',        price: 199,  requiresWebsite: false },
-      { id: 'inventory',   name: 'Inventory Management',         price: 199,  requiresWebsite: false },
+      { id: 'brandedsite', name: 'Branded Website',              price: 0,    requiresWebsite: false, oneTime: 1200 },
+      { id: 'website',     name: 'After-Hours Quote Website',    price: 149,  requiresWebsite: false },
+      { id: 'receptionist',name: 'AI Phone Receptionist',        price: 799,  requiresWebsite: false },
+      { id: 'missedcall',  name: 'Missed-Call Text-Back',        price: 299,  requiresWebsite: false },
+      { id: 'followups',   name: 'Automated Follow-Ups',         price: 399,  requiresWebsite: false },
+      { id: 'reviews',     name: 'Review Automation',            price: 299,  requiresWebsite: false },
+      { id: 'localseo',    name: 'Local SEO & GBP',              price: 699,  requiresWebsite: false },
+      { id: 'localrank',   name: 'Local Search Ranking',         price: 649,  requiresWebsite: true  },
+      { id: 'googleads',   name: 'Google Ads Management',        price: 699,  requiresWebsite: true  },
+      { id: 'smsrecovery', name: 'SMS Lead Recovery',            price: 399,  requiresWebsite: false },
+      { id: 'analytics',   name: 'Revenue Analytics Dashboard',  price: 249,  requiresWebsite: false },
+      { id: 'scheduling',  name: 'Scheduling & Calendar',        price: 299,  requiresWebsite: true  },
+      { id: 'aiassist',    name: 'AI Business Assistant',        price: 249,  requiresWebsite: false },
+      { id: 'inventory',   name: 'Inventory Management',         price: 249,  requiresWebsite: false },
     ];
 
     // Bundle tiers
@@ -111,13 +112,13 @@
       master: {
         id: 'master',
         name: 'Master Bundle',
-        monthly: 4999,
+        monthly: 5500,
         services: ['receptionist','missedcall','followups','reviews','website','localseo','localrank','googleads','smsrecovery','scheduling','analytics','aiassist','inventory'],
         websiteFee: 0,
         websiteFeeLabel: 'Website build FREE',
         websiteFreeWithBundle: true,
         badge: 'All-In',
-        description: 'Everything + a professionally designed website, included free.',
+        description: 'Everything + a fully branded identity website, included free.',
         highlight: false
       }
     };
@@ -151,7 +152,8 @@
         if (b.websiteFreeWithBundle) return 0;
         return b.websiteFee || 0;
       }
-      if (cart.includes('website')) return 1200;
+      if (cart.includes('brandedsite')) return 1200;
+      if (cart.includes('website')) return 0; // quote website is hosting only
       return 0;
     }
 
@@ -309,13 +311,16 @@
         list.innerHTML = cart.map(id => {
           const s = getService(id);
           if (!s) return '';
+          const priceLabel = s.oneTime
+            ? `<span class="text-sm font-semibold text-amber-400">$${s.oneTime.toLocaleString()} one-time</span>`
+            : `<span class="text-sm font-semibold text-emerald-400">$${s.price}/mo</span>`;
           return `
             <div class="flex items-start justify-between gap-2 py-2.5 border-b border-gray-800">
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-100 leading-tight">${s.name}</p>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-sm font-semibold text-emerald-400">$${s.price}/mo</span>
+                ${priceLabel}
                 <button onclick="removeFromCart('${id}')" class="text-gray-600 hover:text-red-400 text-lg leading-none" title="Remove">×</button>
               </div>
             </div>`;
@@ -325,16 +330,20 @@
       // Website build fee notice
       const websiteFeeNote = document.getElementById('website-fee-note');
       const buildFee = websiteBuildFeeForCart();
+      const hasBranded = activeBundle ? false : cart.includes('brandedsite');
       if (hasItems && buildFee > 0) {
         if (activeBundle && getBundle(activeBundle).id === 'complete') {
           websiteFeeNote.innerHTML = `+ <span class="line-through text-gray-500">$1,200</span> <span class="text-amber-400 font-bold">$900</span> <span class="text-emerald-400 text-xs font-bold">SAVE 25%</span> one-time website build`;
+        } else if (hasBranded) {
+          websiteFeeNote.innerHTML = `Branded Website: <span class="text-amber-400 font-bold">$1,200 one-time</span> build fee`;
+          websiteFeeNote.className = 'text-xs text-gray-400 text-center mb-1';
         } else {
           websiteFeeNote.textContent = `+ $${buildFee.toLocaleString()} one-time website build fee (discussed on call)`;
           websiteFeeNote.className = 'text-xs text-amber-400 text-center mb-1';
         }
         websiteFeeNote.classList.remove('hidden');
-      } else if (hasItems && buildFee === 0 && cartHasWebsite()) {
-        websiteFeeNote.textContent = 'Website build included free ✓';
+      } else if (hasItems && buildFee === 0 && activeBundle && getBundle(activeBundle).websiteFreeWithBundle) {
+        websiteFeeNote.textContent = 'Branded website build included free ✓';
         websiteFeeNote.className = 'text-xs text-emerald-400 text-center font-semibold mb-1';
         websiteFeeNote.classList.remove('hidden');
       } else {
@@ -716,7 +725,7 @@
   </section>
 
   <!-- ============================================================
-       SERVICES — 13 À LA CARTE CARDS
+       SERVICES — 14 À LA CARTE CARDS
   ============================================================ -->
   <section id="services" class="border-t border-gray-800 bg-gray-900/40 py-20">
     <div class="mx-auto max-w-6xl px-6">
@@ -726,19 +735,44 @@
       </p>
       <div class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 
-        <!-- After-hours website -->
+        <!-- Branded Website — first, most expensive, full identity site -->
+        <div class="rounded-2xl border border-indigo-500/40 bg-indigo-950/20 p-7 flex flex-col relative">
+          <span class="absolute top-4 right-4 rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs font-bold text-indigo-300">Most Comprehensive</span>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 rounded px-2 py-0.5">Web Presence</span>
+          </div>
+          <h3 class="font-bold text-gray-100 mt-1">Branded Website</h3>
+          <p class="mt-2 text-sm text-gray-400 flex-1">
+            A fully designed website that tells your story — who you are, what you do, your service areas, past work, and why customers choose you. Built to convert visitors into calls and quote requests. Includes everything the quote form does, plus a homepage, service pages, and your brand identity online.
+          </p>
+          <div class="mt-4 pt-3 border-t border-indigo-500/20">
+            <div class="flex items-end justify-between">
+              <div>
+                <p class="text-lg font-extrabold text-white">$1,200 <span class="text-sm font-normal text-gray-400">one-time build</span></p>
+                <p class="text-sm font-semibold text-indigo-300">+ $149/mo hosting</p>
+                <p class="text-xs text-gray-500 mt-1">Live within 10–14 days</p>
+              </div>
+              <button onclick="addToCart('brandedsite')"
+                      class="rounded-lg bg-indigo-500/10 border border-indigo-500/30 px-3 py-1.5 text-xs font-bold text-indigo-300 hover:bg-indigo-500/20 transition-colors whitespace-nowrap">
+                + Add to cart
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- After-hours quote website — simple hosted intake form -->
         <div class="rounded-2xl border border-gray-800 bg-gray-950 p-7 flex flex-col">
           <div class="flex items-center gap-2 mb-1">
             <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 rounded px-2 py-0.5">Capture</span>
           </div>
           <h3 class="font-bold text-gray-100 mt-1">After-Hours Quote Website</h3>
           <p class="mt-2 text-sm text-gray-400 flex-1">
-            Fast, professional website where homeowners can request a quote 24/7. Live within 7–10 days. First quote request typically comes in the first week.
+            A clean, hosted intake page where homeowners can request a quote 24/7 — no full website needed. Just your contact form, service area, and a call-to-action. Live within 7–10 days. First quote request typically comes in the first week. <span class="text-gray-500">Not a branded identity site — see above for that.</span>
           </p>
           <div class="mt-4 flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-300">$110/mo</p>
-              <p class="text-xs text-amber-400">+ $1,200 build fee (à la carte)</p>
+              <p class="text-sm font-semibold text-gray-300">$149/mo</p>
+              <p class="text-xs text-gray-500">Hosting only — no build fee</p>
             </div>
             <button onclick="addToCart('website')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
@@ -758,7 +792,7 @@
             Trained AI answers every call 24/7, takes messages, books appointments, quotes common jobs. Never calls in sick. Text summary of every call instantly.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$599/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$799/mo</p>
             <button onclick="addToCart('receptionist')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -776,7 +810,7 @@
             Every missed call instantly gets a text back: "Sorry we missed you — what do you need?" Active within 24–48 hours. Recovered leads typically show up in the first week.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$199/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$299/mo</p>
             <button onclick="addToCart('missedcall')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -795,7 +829,7 @@
             Every lead that doesn't book on first contact gets a timed follow-up sequence — SMS and email — sent automatically within 5 minutes. Most see 15–30% improvement in lead-to-booking within the first month.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$299/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$399/mo</p>
             <button onclick="addToCart('followups')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -813,7 +847,7 @@
             After each job, customers automatically get a friendly text asking for a review. The contractor with 40 reviews beats the one with 4, every time. Your reputation compounds on autopilot.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$199/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$299/mo</p>
             <button onclick="addToCart('reviews')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -831,7 +865,7 @@
             When someone searches "HVAC near me," Google decides who gets the call. We manage your Google Business Profile — photos, posts, categories, citations — so Google puts you first.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$499/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$699/mo</p>
             <button onclick="addToCart('localseo')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -850,7 +884,7 @@
           </p>
           <div class="mt-4 flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-300">$499/mo</p>
+              <p class="text-sm font-semibold text-gray-300">$649/mo</p>
               <p class="text-xs text-gray-500">Requires website</p>
             </div>
             <button onclick="addToCart('localrank')"
@@ -871,7 +905,7 @@
           </p>
           <div class="mt-4 flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-300">$499/mo + ad spend</p>
+              <p class="text-sm font-semibold text-gray-300">$699/mo + ad spend</p>
               <p class="text-xs text-gray-500">Requires website</p>
             </div>
             <button onclick="addToCart('googleads')"
@@ -892,7 +926,7 @@
             Cold leads in your existing contact list are booked jobs waiting to happen. We run a targeted AI SMS reactivation campaign — most recover 5–15% of cold leads within 2 weeks.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$299/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$399/mo</p>
             <button onclick="addToCart('smsrecovery')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -911,7 +945,7 @@
             A live dashboard showing your jobs, revenue, lead sources, and ROI — all in one place. Know exactly what's working without digging through spreadsheets.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$199/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$249/mo</p>
             <button onclick="addToCart('analytics')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -931,7 +965,7 @@
           </p>
           <div class="mt-4 flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-300">$199/mo</p>
+              <p class="text-sm font-semibold text-gray-300">$299/mo</p>
               <p class="text-xs text-gray-500">Requires website</p>
             </div>
             <button onclick="addToCart('scheduling')"
@@ -952,7 +986,7 @@
             Revenue trends, top lead sources, job history, crew utilization — your AI assistant pulls the answer instantly from your own data. Like a business analyst on call 24/7.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$199/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$249/mo</p>
             <button onclick="addToCart('aiassist')"
                     class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -971,7 +1005,7 @@
             Track parts and materials, get low-inventory alerts, and text suppliers directly from the dashboard. Auto-syncs with Jobber or ServiceTitan.
           </p>
           <div class="mt-4 flex items-center justify-between">
-            <p class="text-sm font-semibold text-gray-300">$199/mo</p>
+            <p class="text-sm font-semibold text-gray-300">$249/mo</p>
             <button onclick="addToCart('inventory')"
                     class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 text-xs font-bold text-yellow-400 hover:bg-yellow-500/20 transition-colors whitespace-nowrap">
               + Add to cart
@@ -1016,7 +1050,7 @@
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>SMS Lead Recovery</li>
           </ul>
           <div class="mt-4 rounded-lg border border-dashed border-gray-700 bg-gray-900/60 p-3">
-            <p class="text-xs text-gray-500 text-center">💡 Add a website for <span class="text-amber-400 font-semibold">$1,200 one-time + $110/mo</span> for higher visibility on Google</p>
+            <p class="text-xs text-gray-500 text-center">💡 Add a Branded Website for <span class="text-amber-400 font-semibold">$1,200 one-time build + $149/mo</span> to boost Google visibility</p>
           </div>
           <button onclick="addBundle('starter')"
                   class="mt-4 rounded-xl border border-gray-600 px-6 py-3 text-sm font-semibold text-gray-200 hover:bg-gray-800 transition-colors">
@@ -1042,7 +1076,7 @@
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Google Ads Management</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>SMS Lead Recovery</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Scheduling &amp; Calendar</li>
-            <li class="flex gap-2"><span class="text-amber-400">→</span><span class="text-amber-300">+ $1,200 website build (one-time)</span></li>
+            <li class="flex gap-2"><span class="text-amber-400">→</span><span class="text-amber-300">+ $1,200 Branded Website build (one-time)</span></li>
           </ul>
           <button onclick="addBundle('growth')"
                   class="mt-6 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-gray-950 hover:bg-emerald-400 transition-colors">
@@ -1069,7 +1103,7 @@
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Advanced Automations</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Inventory Management</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Priority Support</li>
-            <li class="flex gap-2"><span class="text-amber-400">→</span><span class="text-amber-300"><span class="line-through text-gray-500">$1,200</span> $900 website build <span class="text-emerald-400 font-bold text-xs">SAVE 25%</span></span></li>
+            <li class="flex gap-2"><span class="text-amber-400">→</span><span class="text-amber-300"><span class="line-through text-gray-500">$1,200</span> $900 Branded Website build <span class="text-emerald-400 font-bold text-xs">SAVE 25%</span></span></li>
           </ul>
           <button onclick="addBundle('complete')"
                   class="mt-6 rounded-xl border border-purple-500/50 px-6 py-3 text-sm font-semibold text-purple-300 hover:bg-purple-900/30 transition-colors">
@@ -1085,15 +1119,15 @@
             <p class="text-xs font-bold text-emerald-300 mt-0.5">FREE!!!</p>
           </div>
           <p class="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">Master Bundle</p>
-          <p class="text-3xl font-extrabold text-white mt-1">$4,999<span class="text-base font-normal text-gray-400">/mo</span></p>
-          <p class="text-xs text-gray-500 mt-1">13 services + professional website, free</p>
-          <p class="text-sm text-gray-400 mt-3">Everything + a professionally designed website, included free.</p>
+          <p class="text-3xl font-extrabold text-white mt-1">$5,500<span class="text-base font-normal text-gray-400">/mo</span></p>
+          <p class="text-xs text-gray-500 mt-1">13 services + branded website build, free</p>
+          <p class="text-sm text-gray-400 mt-3">Everything + a fully branded identity website, included free.</p>
           <ul class="mt-4 space-y-1.5 text-sm text-gray-400 flex-1">
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Everything in Complete</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>All 13 services</li>
             <li class="flex gap-2"><span class="text-emerald-500">✓</span>Priority Support</li>
-            <li class="flex gap-2"><span class="text-amber-400 font-bold text-lg leading-none flex-shrink-0">★</span><span class="text-emerald-300 font-bold">Professional website build — FREE</span></li>
-            <li class="flex gap-2 text-xs text-gray-500 pl-5"><span class="text-emerald-500 text-xs">↳</span>$1,200 value, included at no extra cost</li>
+            <li class="flex gap-2"><span class="text-amber-400 font-bold text-lg leading-none flex-shrink-0">★</span><span class="text-emerald-300 font-bold">Branded Website build — FREE</span></li>
+            <li class="flex gap-2 text-xs text-gray-500 pl-5"><span class="text-emerald-500 text-xs">↳</span>Full identity site: homepage, service pages, your brand. $1,200 value, included.</li>
           </ul>
           <button onclick="addBundle('master')"
                   class="mt-6 rounded-xl bg-amber-500 px-6 py-3 text-sm font-bold text-gray-950 hover:bg-amber-400 transition-colors">
@@ -1107,8 +1141,8 @@
       <div class="mt-10 max-w-3xl mx-auto rounded-2xl border border-gray-800 bg-gray-900/40 p-6 flex flex-col sm:flex-row items-center gap-6">
         <div class="flex-1">
           <p class="font-bold text-gray-100">Or build your own stack</p>
-          <p class="text-sm text-gray-400 mt-1">Pick exactly what's costing you the most. 13 services starting at $110/mo. No minimum, no contract.</p>
-          <p class="text-sm text-amber-400 mt-1">Website build: $1,200 one-time (à la carte)</p>
+          <p class="text-sm text-gray-400 mt-1">Pick exactly what's costing you the most. 14 services starting at $149/mo. No minimum, no contract.</p>
+          <p class="text-sm text-amber-400 mt-1">Branded Website: $1,200 one-time build (à la carte) · included free in Master Bundle</p>
         </div>
         <button onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})"
                 class="rounded-xl border border-gray-600 px-6 py-3 text-sm font-semibold text-gray-200 hover:bg-gray-800 transition-colors whitespace-nowrap">
@@ -1127,24 +1161,25 @@
                 <th class="px-4 py-3 text-center font-semibold text-gray-500">Starter<br><span class="text-white font-bold normal-case text-sm">$1,499</span></th>
                 <th class="px-4 py-3 text-center font-semibold text-emerald-400">Growth<br><span class="text-white font-bold normal-case text-sm">$2,499</span></th>
                 <th class="px-4 py-3 text-center font-semibold text-purple-400">Complete<br><span class="text-white font-bold normal-case text-sm">$3,999</span></th>
-                <th class="px-4 py-3 text-center font-semibold text-amber-400">Master<br><span class="text-white font-bold normal-case text-sm">$4,999</span></th>
+                <th class="px-4 py-3 text-center font-semibold text-amber-400">Master<br><span class="text-white font-bold normal-case text-sm">$5,500</span></th>
                 <th class="px-4 py-3 text-right font-semibold">À la carte</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-800">
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">After-Hours Quote Website</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$110/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Phone Receptionist</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$599/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Missed-Call Text-Back</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$199/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Automated Follow-Ups</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Review Automation</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$199/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local SEO & GBP</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$499/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local Search Ranking</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$499/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Google Ads Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$499/mo + ad spend</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">SMS Lead Recovery</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Scheduling & Calendar</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$199/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Revenue Analytics Dashboard</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$199/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Business Assistant</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$199/mo</td></tr>
-              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Inventory Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$199/mo</td></tr>
+              <tr class="hover:bg-gray-900/40 bg-indigo-950/10"><td class="px-4 py-3 text-gray-200 font-medium">Branded Website <span class="text-xs text-indigo-400 font-normal">(full identity site)</span></td><td class="px-4 py-3 text-center text-gray-700 text-xs">—</td><td class="px-4 py-3 text-center text-xs"><span class="text-amber-400 font-bold">$1,200</span></td><td class="px-4 py-3 text-center text-xs"><span class="line-through text-gray-500">$1,200</span> <span class="text-amber-400 font-bold">$900</span></td><td class="px-4 py-3 text-center text-emerald-400 text-xs font-bold">FREE</td><td class="px-4 py-3 text-right text-amber-400 font-semibold text-xs">$1,200 one-time</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">After-Hours Quote Website <span class="text-xs text-gray-500">(intake form)</span></td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$149/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Phone Receptionist</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$799/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Missed-Call Text-Back</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Automated Follow-Ups</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$399/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Review Automation</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local SEO & GBP</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$699/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Local Search Ranking</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$649/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Google Ads Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$699/mo + ad spend</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">SMS Lead Recovery</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$399/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Scheduling & Calendar</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$299/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Revenue Analytics Dashboard</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$249/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">AI Business Assistant</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$249/mo</td></tr>
+              <tr class="hover:bg-gray-900/40"><td class="px-4 py-3 text-gray-300">Inventory Management</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-gray-700">—</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-center text-emerald-500">✓</td><td class="px-4 py-3 text-right text-emerald-400 font-semibold">$249/mo</td></tr>
               <tr class="hover:bg-gray-900/40 bg-gray-900/60">
                 <td class="px-4 py-3 font-bold text-white">Priority Support</td>
                 <td class="px-4 py-3 text-center text-gray-700">—</td>
@@ -1154,12 +1189,12 @@
                 <td class="px-4 py-3 text-right text-gray-500 text-xs">Bundle only</td>
               </tr>
               <tr class="bg-gray-900/60 border-t-2 border-gray-700">
-                <td class="px-4 py-3.5 font-bold text-white">Website build fee</td>
+                <td class="px-4 py-3.5 font-bold text-white">Branded Website build</td>
                 <td class="px-4 py-3.5 text-center text-gray-600 text-xs font-bold">Not included</td>
-                <td class="px-4 py-3.5 text-center text-amber-400 text-xs font-bold">$1,200</td>
+                <td class="px-4 py-3.5 text-center text-amber-400 text-xs font-bold">$1,200 one-time</td>
                 <td class="px-4 py-3.5 text-center text-xs font-bold"><span class="line-through text-gray-500">$1,200</span> <span class="text-amber-400">$900</span></td>
-                <td class="px-4 py-3.5 text-center text-emerald-400 text-xs font-bold">FREE</td>
-                <td class="px-4 py-3.5 text-right text-amber-400 font-bold">$1,200</td>
+                <td class="px-4 py-3.5 text-center text-emerald-400 text-xs font-bold">FREE ✓</td>
+                <td class="px-4 py-3.5 text-right text-amber-400 font-bold">$1,200 one-time</td>
               </tr>
             </tbody>
           </table>
@@ -1218,7 +1253,7 @@
             </tr>
             <tr>
               <td class="px-4 py-4 font-bold text-emerald-400">SignalSync</td>
-              <td class="px-4 py-4">Start at $1,499/mo · no contract</td>
+              <td class="px-4 py-4">Start at $1,499/mo · no contract · à la carte from $149/mo</td>
               <td class="px-4 py-4">Free measured audit first. Then we plug the leaks and report calls, quotes, reviews, rankings — numbers you can verify yourself.</td>
               <td class="px-4 py-4 font-semibold text-white">You. Always.</td>
             </tr>
