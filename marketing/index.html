@@ -390,7 +390,7 @@
   <!-- ============================================================
        CART OVERLAY + DRAWER
   ============================================================ -->
-  <div id="cart-overlay" class="hidden fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm" onclick="closeCart()"></div>
+  <div id="cart-overlay" class="hidden fixed inset-0 z-[100]" style="background:rgba(0,0,0,0.55);" onclick="closeCart()"></div>
 
   <div id="cart-drawer"
        class="fixed top-0 right-0 h-full w-full max-w-md bg-gray-950 border-l border-gray-800 z-[110] flex flex-col shadow-2xl"
@@ -412,7 +412,11 @@
         <p id="website-fee-note" class="hidden text-xs text-amber-400 text-center"></p>
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-400">Monthly total</span>
-          <span class="text-xl font-extrabold text-white" id="cart-total">$0/mo</span>
+          <span class="text-xl font-extrabold text-gray-500 line-through" id="cart-total">$0/mo</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-white">Due today</span>
+          <span class="text-xl font-extrabold text-emerald-400">$0</span>
         </div>
         <p class="text-xs text-gray-600 text-center">No payment now — this books a free call with Will</p>
         <button id="checkout-btn" onclick="goToQuestionnaire()"
@@ -565,7 +569,7 @@
             <span class="text-5xl">📅</span>
             <h3 class="font-bold text-lg text-white">Book your discovery call</h3>
             <p class="text-sm text-gray-400 max-w-xs">Pick a time directly with Will — 30 minutes, no commitment.</p>
-            <a href="#book" onclick="closeCart()" class="rounded-xl bg-emerald-500 px-8 py-3.5 font-bold text-gray-950 hover:bg-emerald-400 transition-colors">
+            <a href="/book" class="rounded-xl bg-emerald-500 px-8 py-3.5 font-bold text-gray-950 hover:bg-emerald-400 transition-colors">
               Open booking calendar →
             </a>
             <p class="text-xs text-gray-500">Or call <a href="tel:+14155801702" class="text-gray-400 hover:text-white">(415) 580-1702</a></p>
@@ -600,7 +604,7 @@
         <a href="#services" class="hover:text-white">Services</a>
         <a href="#pricing" class="hover:text-white">Pricing</a>
         <a href="#promise" class="hover:text-white">Promise</a>
-        <a href="#book" class="text-emerald-400 font-semibold hover:text-emerald-300">Book a Call</a>
+        <a href="/book" class="text-emerald-400 font-semibold hover:text-emerald-300">Book a Call</a>
       </nav>
       <div class="flex items-center gap-3">
         <button onclick="openCart()" class="relative rounded-lg border border-gray-700 p-2 hover:bg-gray-900 transition-colors" aria-label="View cart">
@@ -640,7 +644,7 @@
       </a>
     </div>
     <div class="mt-5">
-      <a href="#book" class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-950/50 px-7 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-950 hover:border-emerald-400 transition-colors">
+      <a href="/book" class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-950/50 px-7 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-950 hover:border-emerald-400 transition-colors">
         📅 Book a free call with Will →
       </a>
     </div>
@@ -1322,22 +1326,7 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       BOOK SECTION — Calendly embed
-  ============================================================ -->
-  <section id="book" class="border-t border-gray-800 py-20">
-    <div class="mx-auto max-w-3xl px-6">
-      <div class="text-center mb-10">
-        <p class="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-3">Free · 30 minutes · no commitment</p>
-        <h2 class="text-3xl font-bold text-white">Let's Get Your Phone Ringing.</h2>
-        <p class="mt-4 text-gray-400 max-w-xl mx-auto">Pick a time that works for you. We'll walk through your business, show you exactly what's costing you jobs, and lay out the right setup — zero pressure, zero pitch fluff.</p>
-      </div>
-      <div class="rounded-2xl border border-emerald-500/20 bg-gray-900/60 overflow-hidden">
-        <div class="calendly-inline-widget" data-url="https://calendly.com/williamhoge1/30min?hide_event_type_details=1&background_color=030712&text_color=f9fafb&primary_color=34d399" style="min-width:320px;height:700px;"></div>
-        <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
-      </div>
-    </div>
-  </section>
+  <!-- Book section removed — /book is a dedicated page -->
 
   <!-- Footer -->
   <footer class="border-t border-gray-800 py-10">
