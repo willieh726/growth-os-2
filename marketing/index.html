@@ -36,7 +36,7 @@
 
   <style>
     #cart-overlay { transition: opacity 0.25s; }
-    #cart-drawer { transition: transform 0.3s cubic-bezier(.4,0,.2,1); }
+    #cart-drawer { transform: translateX(100%); transition: transform 0.3s cubic-bezier(.4,0,.2,1); }
     #cart-drawer.open { transform: translateX(0); }
     #error-popup { transition: opacity 0.2s, transform 0.2s; }
     body.cart-open { overflow: hidden; }
@@ -218,12 +218,37 @@
       updateCartUI();
     }
 
+    function saveCart() {
+      try { localStorage.setItem('ss_cart', JSON.stringify({cart, activeBundle})); } catch(e) {}
+    }
+    function loadCart() {
+      try {
+        const d = JSON.parse(localStorage.getItem('ss_cart') || 'null');
+        if (d) { cart = Array.isArray(d.cart) ? d.cart : []; activeBundle = d.activeBundle || null; }
+      } catch(e) {}
+    }
+
     function openCart() {
       cartOpen = true;
       document.getElementById('cart-drawer').classList.add('open');
       document.getElementById('cart-overlay').classList.remove('hidden');
       document.body.classList.add('cart-open');
       checkoutStep = 0;
+      bookingPath = 'checkout';
+      showCartStep();
+    }
+
+    // Book a Call entry point: cart with items -> checkout path; empty cart -> direct path.
+    // Either way the questionnaire + acknowledgments are required before /book.
+    function startBooking() {
+      const hasItems = activeBundle || cart.length > 0;
+      if (hasItems) { openCart(); return; }
+      cartOpen = true;
+      document.getElementById('cart-drawer').classList.add('open');
+      document.getElementById('cart-overlay').classList.remove('hidden');
+      document.body.classList.add('cart-open');
+      bookingPath = 'direct';
+      checkoutStep = 1;
       showCartStep();
     }
 
@@ -252,6 +277,7 @@
       const hasItems = activeBundle || cart.length > 0;
 
       // Nav badge
+      saveCart();
       const badge = document.getElementById('cart-badge');
       const count = activeBundle ? getBundle(activeBundle).services.length : cart.length;
       badge.textContent = count;
@@ -323,19 +349,26 @@
     }
 
     function showCartStep() {
+      // Show only the fields/disclosures that belong to the current booking path
+      document.querySelectorAll('#cart-drawer [data-path]').forEach(el => {
+        el.classList.toggle('hidden', el.getAttribute('data-path') !== bookingPath);
+      });
+      document.getElementById('questionnaire-back').textContent = bookingPath === 'direct' ? 'Cancel' : '← Back to cart';
+      validateIntake(); validateAcks();
       document.getElementById('cart-view').classList.toggle('hidden', checkoutStep !== 0);
       document.getElementById('questionnaire-view').classList.toggle('hidden', checkoutStep !== 1);
       document.getElementById('disclaimer-view').classList.toggle('hidden', checkoutStep !== 2);
-      document.getElementById('booking-view').classList.toggle('hidden', checkoutStep !== 3);
 
       // Update drawer title
-      const titles = ['Your Services', 'Quick Questions', 'Before You Book', 'Pick a Time'];
-      const subs = ['Review what you\'ve selected', '5 questions · takes 30 seconds', 'Read before proceeding', '30 min with Will'];
+      const titles = ['Your Services', 'About Your Business', 'Before You Book'];
+      if (bookingPath === 'direct') titles[1] = 'Book a Free Consultation';
+      const subs = ['Review what you\'ve selected', 'A few quick questions · about a minute', 'Required acknowledgments'];
       document.getElementById('drawer-title').textContent = titles[checkoutStep] || 'Your Services';
       document.getElementById('drawer-sub').textContent = subs[checkoutStep] || '';
     }
 
     function goToQuestionnaire() {
+      bookingPath = 'checkout';
       checkoutStep = 1;
       showCartStep();
     }
@@ -345,30 +378,40 @@
       showCartStep();
     }
 
-    function goToBooking() {
-      checkoutStep = 3;
-      showCartStep();
-    }
 
-    function goBackToCart() { checkoutStep = 0; showCartStep(); }
+    function goBackToCart() { if (bookingPath === 'direct') { closeCart(); return; } checkoutStep = 0; showCartStep(); }
     function goBackToQuestionnaire() { checkoutStep = 1; showCartStep(); }
-    function goBackToDisclaimer() { checkoutStep = 2; showCartStep(); }
 
-    function handleQuestionnaireAnswer(q, val) {
-      questionnaireAnswers[q] = val;
-      // Update button styles
-      const yesBtn = document.getElementById(`q${q}-yes`);
-      const noBtn  = document.getElementById(`q${q}-no`);
-      if (val) {
-        yesBtn.className = 'flex-1 rounded-lg py-2 text-sm font-bold bg-emerald-500 text-gray-950 transition-colors';
-        noBtn.className  = 'flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors';
-      } else {
-        noBtn.className  = 'flex-1 rounded-lg py-2 text-sm font-bold bg-gray-700 text-white transition-colors';
-        yesBtn.className = 'flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors';
-      }
-      // Enable continue button if all 5 answered
-      const allAnswered = [1,2,3,4,5].every(n => questionnaireAnswers[n] !== undefined);
-      document.getElementById('questionnaire-continue').disabled = !allAnswered;
+    let bookingPath = 'checkout'; // 'checkout' (came through cart) or 'direct' (Book a Call, empty cart)
+    function onPath(el) { const w = el.closest('[data-path]'); return !w || w.getAttribute('data-path') === bookingPath; }
+    function validateIntake() {
+      const req = [...document.querySelectorAll('#questionnaire-view [data-req]')].filter(onPath);
+      const ok = req.every(el => el.value.trim() !== '');
+      document.getElementById('questionnaire-continue').disabled = !ok;
+    }
+    function validateAcks() {
+      const req = [...document.querySelectorAll('#disclaimer-view [data-ack]')].filter(onPath);
+      const ok = req.every(el => el.checked) && document.getElementById('ack-final').checked;
+      document.getElementById('acks-continue').disabled = !ok;
+    }
+    function completeCheckout() {
+      const g = id => (document.getElementById(id) || {}).value || '';
+      const intake = {
+        business: g('in-biz'), website: g('in-web'), industry: g('in-industry'), area: g('in-city'),
+        leadVolume: g('in-volume'), challenge: g('in-challenge'), crm: g('in-crm'), decisionMaker: g('in-owner'),
+        marketingConsent: document.getElementById('ack-mkt').checked,
+        path: bookingPath,
+        interest: bookingPath === 'direct' ? g('in-interest') : '',
+        services: bookingPath === 'direct' ? '' : (activeBundle ? getBundle(activeBundle).name : cart.map(id => getService(id).name).join(', ')),
+        monthly: bookingPath === 'direct' ? 0 : cartMonthlyTotal(), buildFee: bookingPath === 'direct' ? 0 : websiteBuildFeeForCart(),
+        completedAt: new Date().toISOString()
+      };
+      try {
+        sessionStorage.setItem('ss_checkout_ok', '1');
+        sessionStorage.setItem('ss_path', bookingPath);
+        localStorage.setItem('ss_intake', JSON.stringify(intake));
+      } catch(e) {}
+      window.location.href = '/book';
     }
   </script>
 
@@ -393,8 +436,7 @@
   <div id="cart-overlay" class="hidden fixed inset-0 z-[100]" style="background:rgba(0,0,0,0.55);" onclick="closeCart()"></div>
 
   <div id="cart-drawer"
-       class="fixed top-0 right-0 h-full w-full max-w-md bg-gray-950 border-l border-gray-800 z-[110] flex flex-col shadow-2xl"
-       style="transform: translateX(100%);">
+       class="fixed top-0 right-0 h-full w-full max-w-md bg-gray-950 border-l border-gray-800 z-[110] flex flex-col shadow-2xl">
 
     <!-- Drawer header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 flex-shrink-0">
@@ -412,7 +454,7 @@
         <p id="website-fee-note" class="hidden text-xs text-amber-400 text-center"></p>
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-400">Monthly total</span>
-          <span class="text-xl font-extrabold text-gray-500 line-through" id="cart-total">$0/mo</span>
+          <span class="text-xl font-extrabold text-gray-500 line-through" style="text-decoration:line-through" id="cart-total">$0/mo</span>
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm font-semibold text-white">Due today</span>
@@ -421,7 +463,7 @@
         <p class="text-xs text-gray-600 text-center">No payment now — this books a free call with Will</p>
         <button id="checkout-btn" onclick="goToQuestionnaire()"
                 class="w-full rounded-xl bg-emerald-500 py-3.5 font-bold text-gray-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-          Continue →
+          Checkout →
         </button>
         <button onclick="closeCart()" class="w-full rounded-xl border border-gray-700 py-2.5 text-sm text-gray-400 hover:bg-gray-900">
           Keep browsing
@@ -431,74 +473,33 @@
 
     <!-- QUESTIONNAIRE VIEW (step 1) -->
     <div id="questionnaire-view" class="hidden flex-col flex-1 overflow-hidden">
-      <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-        <div class="text-center mb-1">
-          <p class="text-xs text-gray-500">We ask these to make sure SignalSync is actually the right fit for where you are right now. No right or wrong answers.</p>
-        </div>
-
-        <!-- Q1 -->
-        <div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4 space-y-3">
-          <p class="text-sm font-semibold text-gray-100 leading-snug">1. Does your business have established, recurring monthly revenue?</p>
-          <div class="flex gap-2">
-            <button id="q1-yes" onclick="handleQuestionnaireAnswer(1, true)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Yes</button>
-            <button id="q1-no" onclick="handleQuestionnaireAnswer(1, false)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">No</button>
-          </div>
-        </div>
-
-        <!-- Q2 -->
-        <div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4 space-y-3">
-          <p class="text-sm font-semibold text-gray-100 leading-snug">2. Do you receive consistent inbound calls and inquiries — even if you're missing some of them?</p>
-          <div class="flex gap-2">
-            <button id="q2-yes" onclick="handleQuestionnaireAnswer(2, true)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Yes</button>
-            <button id="q2-no" onclick="handleQuestionnaireAnswer(2, false)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">No</button>
-          </div>
-        </div>
-
-        <!-- Q3 -->
-        <div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4 space-y-3">
-          <p class="text-sm font-semibold text-gray-100 leading-snug">3. Is the average value of your jobs high enough that one or two recovered leads per month would justify the investment?</p>
-          <div class="flex gap-2">
-            <button id="q3-yes" onclick="handleQuestionnaireAnswer(3, true)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Yes</button>
-            <button id="q3-no" onclick="handleQuestionnaireAnswer(3, false)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">No</button>
-          </div>
-        </div>
-
-        <!-- Q4 -->
-        <div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4 space-y-3">
-          <p class="text-sm font-semibold text-gray-100 leading-snug">4. Can you comfortably afford $1,500–$4,000/mo without it creating financial strain while results build?</p>
-          <div class="flex gap-2">
-            <button id="q4-yes" onclick="handleQuestionnaireAnswer(4, true)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Yes</button>
-            <button id="q4-no" onclick="handleQuestionnaireAnswer(4, false)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">No</button>
-          </div>
-        </div>
-
-        <!-- Q5 -->
-        <div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4 space-y-3">
-          <p class="text-sm font-semibold text-gray-100 leading-snug">5. Can you identify specific places where your business is likely losing revenue right now — missed calls, slow response times, weak Google presence, or cold leads going nowhere?</p>
-          <div class="flex gap-2">
-            <button id="q5-yes" onclick="handleQuestionnaireAnswer(5, true)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">Yes</button>
-            <button id="q5-no" onclick="handleQuestionnaireAnswer(5, false)"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-700 text-gray-400 hover:bg-gray-800 transition-colors">No</button>
-          </div>
-        </div>
-
-        <p class="text-xs text-gray-600 text-center px-2">Your answers help Will understand where you are and prepare the right conversation. No auto-rejection — we'll talk through everything on the call.</p>
-      </div>
+      <form class="flex-1 overflow-y-auto px-6 py-4 space-y-4" onsubmit="return false">
+        <p class="text-xs text-gray-500 text-center">A few quick details so Will can prepare for your call. All fields marked required.</p>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">Business name</label>
+          <input id="in-biz" type="text" placeholder="e.g. Mike's HVAC" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" oninput="validateIntake()"></div>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">Website <span class="text-gray-600 font-normal">(optional)</span></label>
+          <input id="in-web" type="url" placeholder="https://" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500"  oninput="validateIntake()"></div>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">Industry / business type</label>
+          <select id="in-industry" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" onchange="validateIntake()"><option value="">Select…</option><option value="HVAC">HVAC</option><option value="Plumbing">Plumbing</option><option value="Roofing">Roofing</option><option value="Electrical">Electrical</option><option value="Landscaping">Landscaping</option><option value="Auto Repair">Auto Repair</option><option value="Pest Control">Pest Control</option><option value="Cleaning">Cleaning</option><option value="Other">Other</option></select></div>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">City / service area</label>
+          <input id="in-city" type="text" placeholder="e.g. Oakland & East Bay" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" oninput="validateIntake()"></div>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">Approximate monthly lead volume</label>
+          <select id="in-volume" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" onchange="validateIntake()"><option value="">Select…</option><option value="0–10">0–10</option><option value="10–25">10–25</option><option value="25–50">25–50</option><option value="50–100">50–100</option><option value="100+">100+</option></select></div>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">Biggest challenge with generating or converting leads</label>
+          <textarea id="in-challenge" rows="3" placeholder="e.g. We miss calls when we're on the job and never hear back from them." class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" oninput="validateIntake()"></textarea></div>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">Current CRM / software</label>
+          <select id="in-crm" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" onchange="validateIntake()"><option value="">Select…</option><option value="None">None</option><option value="Jobber">Jobber</option><option value="ServiceTitan">ServiceTitan</option><option value="Housecall Pro">Housecall Pro</option><option value="FieldEdge">FieldEdge</option><option value="Spreadsheet / paper">Spreadsheet / paper</option><option value="Other">Other</option></select></div>
+        <div><label class="block text-xs font-semibold text-gray-300 mb-1.5">Are you the owner or decision-maker?</label>
+          <select id="in-owner" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" onchange="validateIntake()"><option value="">Select…</option><option value="Yes — owner">Yes — owner</option><option value="Yes — decision-maker">Yes — decision-maker</option><option value="No — but I can bring this to them">No — but I can bring this to them</option></select></div>
+        <div data-path="direct" class="hidden"><label class="block text-xs font-semibold text-gray-300 mb-1.5">Which services are you interested in?</label>
+          <input id="in-interest" type="text" placeholder="e.g. missed-call follow-up, website, reviews — or &quot;not sure yet&quot;" class="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-emerald-500" data-req="1" oninput="validateIntake()"></div>
+      </form>
       <div class="border-t border-gray-800 px-6 py-4 flex-shrink-0 space-y-2">
         <button id="questionnaire-continue" onclick="goToDisclaimer()" disabled
                 class="w-full rounded-xl bg-emerald-500 py-3.5 font-bold text-gray-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           Continue →
         </button>
-        <button onclick="goBackToCart()" class="w-full rounded-xl border border-gray-700 py-2.5 text-sm text-gray-400 hover:bg-gray-900">
+        <button id="questionnaire-back" onclick="goBackToCart()" class="w-full rounded-xl border border-gray-700 py-2.5 text-sm text-gray-400 hover:bg-gray-900">
           ← Back to cart
         </button>
       </div>
@@ -507,77 +508,54 @@
     <!-- DISCLAIMER VIEW (step 2) -->
     <div id="disclaimer-view" class="hidden flex-col flex-1 overflow-hidden">
       <div class="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-        <div class="text-center mb-2">
+        <div class="text-center">
           <span class="text-3xl">📋</span>
-          <h3 class="font-bold text-lg text-white mt-2">Before you book — a few quick notes</h3>
+          <h3 class="font-bold text-lg text-white mt-2">Please confirm before booking</h3>
+          <p class="text-xs text-gray-500 mt-1">Required acknowledgments</p>
         </div>
+        <p class="text-xs text-gray-400 leading-relaxed text-center">The consultation is a chance to discuss your needs, explore how we can help, and walk through recommended services and their costs. Selecting services or booking a call does not commit you to purchasing or activating anything.</p>
         <div class="rounded-xl border border-gray-800 bg-gray-900/60 p-4 space-y-4">
-          <div class="flex gap-3">
-            <span class="text-emerald-400 font-bold text-lg flex-shrink-0">1.</span>
-            <div>
-              <p class="font-semibold text-sm text-gray-100">You're not paying for anything yet</p>
-              <p class="text-xs text-gray-400 mt-1">This books a 30-minute discovery call — no credit card, no commitment. We'll go over everything together first.</p>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <span class="text-emerald-400 font-bold text-lg flex-shrink-0">2.</span>
-            <div>
-              <p class="font-semibold text-sm text-gray-100">What the call covers</p>
-              <p class="text-xs text-gray-400 mt-1">We'll review the services you selected, talk through your business goals, answer every question you have, and confirm the full picture of what to expect from SignalSync. No surprises.</p>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <span class="text-emerald-400 font-bold text-lg flex-shrink-0">3.</span>
-            <div>
-              <p class="font-semibold text-sm text-gray-100">Only pick a time you can commit to</p>
-              <p class="text-xs text-gray-400 mt-1">Please only book a slot you'll be free for. We block that time specifically for you — if something comes up, reschedule at least 2 hours in advance.</p>
-            </div>
-          </div>
-          <div class="flex gap-3">
-            <span class="text-emerald-400 font-bold text-lg flex-shrink-0">4.</span>
-            <div>
-              <p class="font-semibold text-sm text-gray-100">Sign on 10 minutes early</p>
-              <p class="text-xs text-gray-400 mt-1">Join the call link 10 minutes before your start time to get settled in and avoid any last-minute tech issues.</p>
-            </div>
-          </div>
+          <label data-path="checkout" class="flex gap-3 items-start cursor-pointer">
+            <input type="checkbox" id="ack1" data-ack="1" onchange="validateAcks()" class="mt-0.5 h-4 w-4 accent-emerald-500 flex-shrink-0">
+            <span class="text-sm text-gray-200 leading-snug">No payment is due today under this introductory offer.</span>
+          </label>
+          <label data-path="checkout" class="flex gap-3 items-start cursor-pointer">
+            <input type="checkbox" id="ack2" data-ack="1" onchange="validateAcks()" class="mt-0.5 h-4 w-4 accent-emerald-500 flex-shrink-0">
+            <span class="text-sm text-gray-200 leading-snug">Booking a consultation does not automatically activate services or obligate me to purchase anything.</span>
+          </label>
+          <label class="flex gap-3 items-start cursor-pointer">
+            <input type="checkbox" id="ack3" data-ack="1" onchange="validateAcks()" class="mt-0.5 h-4 w-4 accent-emerald-500 flex-shrink-0">
+            <span class="text-sm text-gray-200 leading-snug">Ongoing service fees, payment requirements, and applicable terms will be clearly explained before I agree to enroll in any services.</span>
+          </label>
+          <label class="flex gap-3 items-start cursor-pointer">
+            <input type="checkbox" id="ack4" data-ack="1" onchange="validateAcks()" class="mt-0.5 h-4 w-4 accent-emerald-500 flex-shrink-0">
+            <span class="text-sm text-gray-200 leading-snug">All information I submitted is accurate to the best of my knowledge.</span>
+          </label>
+          <label class="flex gap-3 items-start cursor-pointer">
+            <input type="checkbox" id="ack5" data-ack="1" onchange="validateAcks()" class="mt-0.5 h-4 w-4 accent-emerald-500 flex-shrink-0">
+            <span class="text-sm text-gray-200 leading-snug">I will arrive 5–10 minutes early for my scheduled video consultation to allow time to address any potential technical issues.</span>
+          </label>
         </div>
-        <div class="rounded-xl border border-emerald-500/20 bg-emerald-950/30 p-3 text-center">
-          <p class="text-xs text-emerald-300">Your selected services will be ready to review when Will gets on the call with you.</p>
+        <div class="rounded-xl border border-gray-800 bg-gray-900/30 p-4 space-y-3">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Optional</p>
+          <label class="flex gap-3 items-start cursor-pointer">
+            <input type="checkbox" id="ack-mkt"  onchange="validateAcks()" class="mt-0.5 h-4 w-4 accent-emerald-500 flex-shrink-0">
+            <span class="text-sm text-gray-200 leading-snug">I'd like to receive occasional SMS/email tips and offers from SignalSync. I can unsubscribe at any time. (Not required to book.)</span>
+          </label>
+        </div>
+        <div class="rounded-xl border border-emerald-500/30 bg-emerald-950/30 p-4">
+          <label class="flex gap-3 items-start cursor-pointer">
+            <input type="checkbox" id="ack-final" data-ack="1" onchange="validateAcks()" class="mt-0.5 h-4 w-4 accent-emerald-500 flex-shrink-0">
+            <span class="text-sm text-gray-200 leading-snug"><b>I understand that submitting this form is a request to schedule a consultation, not an automatic purchase or service activation.</b></span>
+          </label>
         </div>
       </div>
       <div class="border-t border-gray-800 px-6 py-4 flex-shrink-0 space-y-2">
-        <button onclick="goToBooking()"
-                class="w-full rounded-xl bg-emerald-500 py-3.5 font-bold text-gray-950 hover:bg-emerald-400 transition-colors">
-          Got it — pick my call time →
+        <button id="acks-continue" onclick="completeCheckout()" disabled
+                class="w-full rounded-xl bg-emerald-500 py-3.5 font-bold text-gray-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          Continue to Booking →
         </button>
         <button onclick="goBackToQuestionnaire()" class="w-full rounded-xl border border-gray-700 py-2.5 text-sm text-gray-400 hover:bg-gray-900">
-          ← Back
-        </button>
-      </div>
-    </div>
-
-    <!-- BOOKING VIEW (step 3) -->
-    <div id="booking-view" class="hidden flex-col flex-1 overflow-hidden">
-      <div class="flex-1 overflow-hidden">
-        <div class="text-center py-3 px-6">
-          <h3 class="font-bold text-base text-white">Pick a time for your discovery call</h3>
-          <p class="text-xs text-gray-400 mt-0.5">30 minutes · with Will from SignalSync</p>
-        </div>
-        <!-- Calendar embed -->
-        <div style="height: calc(100% - 60px); overflow: hidden;">
-          <div class="flex flex-col items-center justify-center h-full px-6 py-10 text-center space-y-4">
-            <span class="text-5xl">📅</span>
-            <h3 class="font-bold text-lg text-white">Book your discovery call</h3>
-            <p class="text-sm text-gray-400 max-w-xs">Pick a time directly with Will — 30 minutes, no commitment.</p>
-            <a href="/book" class="rounded-xl bg-emerald-500 px-8 py-3.5 font-bold text-gray-950 hover:bg-emerald-400 transition-colors">
-              Open booking calendar →
-            </a>
-            <p class="text-xs text-gray-500">Or call <a href="tel:+14155801702" class="text-gray-400 hover:text-white">(415) 580-1702</a></p>
-          </div>
-        </div>
-      </div>
-      <div class="border-t border-gray-800 px-6 py-3 flex-shrink-0">
-        <button onclick="goBackToDisclaimer()" class="w-full rounded-xl border border-gray-700 py-2.5 text-sm text-gray-400 hover:bg-gray-900">
           ← Back
         </button>
       </div>
@@ -1347,8 +1325,14 @@
   <!-- Initialize -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      loadCart();
       updateCartUI();
-      document.getElementById('cart-drawer').style.transform = 'translateX(100%)';
+      // Every "Book a Call" link runs through the questionnaire first
+      document.querySelectorAll('a[href="/book"]').forEach(a => {
+        a.addEventListener('click', function(e) { e.preventDefault(); startBooking(); });
+      });
+      // Bounced back from /book without completing the questions
+      if (/[?&](checkout|book)=1/.test(location.search)) { startBooking(); }
     });
   </script>
 
