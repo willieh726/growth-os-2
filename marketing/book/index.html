@@ -26,6 +26,17 @@
     body { font-family: 'Inter', sans-serif; }
     h1, h2 { font-family: 'Space Grotesk', sans-serif; }
   </style>
+  <script>
+    // Gate: the questionnaire + acknowledgments are required for everyone.
+    // Cart items present -> must have come through checkout; empty cart -> direct path is fine.
+    (function(){
+      var hasCart=false, ok=false, path='';
+      try { var d=JSON.parse(localStorage.getItem('ss_cart')||'null');
+            hasCart = !!(d && ((Array.isArray(d.cart) && d.cart.length>0) || d.activeBundle)); } catch(e){}
+      try { ok = sessionStorage.getItem('ss_checkout_ok')==='1'; path = sessionStorage.getItem('ss_path')||''; } catch(e){}
+      if (!ok || (hasCart && path!=='checkout')) { window.location.replace('/?book=1'); }
+    })();
+  </script>
 </head>
 <body class="bg-gray-950 text-gray-100 antialiased min-h-screen">
 
@@ -74,11 +85,42 @@
       </div>
     </div>
 
+    <!-- Submitted summary -->
+    <div id="intake-summary" class="hidden rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-5 mb-8 text-sm">
+      <p class="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-2">✓ Pre-call info received</p>
+      <p class="text-gray-300" id="intake-line"></p>
+      <p class="text-xs text-gray-500 mt-2" id="intake-note"></p>
+    </div>
+
     <!-- Calendly embed -->
     <div class="rounded-2xl border border-emerald-500/20 bg-gray-900/60 overflow-hidden">
       <div class="calendly-inline-widget"
            data-url="https://calendly.com/williamhoge1/30min?hide_event_type_details=1&background_color=030712&text_color=f9fafb&primary_color=34d399"
            style="min-width:320px;height:700px;"></div>
+      <script>
+        // Pass the questionnaire answers into Calendly's "anything that will help prepare" notes field (a1)
+        (function(){
+          try {
+            var d = JSON.parse(localStorage.getItem('ss_intake')||'null'); if(!d) return;
+            var L = [];
+            L.push('Business: ' + d.business);
+            if (d.website) L.push('Website: ' + d.website);
+            L.push('Industry: ' + d.industry);
+            L.push('Service area: ' + d.area);
+            L.push('Monthly leads: ' + d.leadVolume);
+            L.push('Biggest challenge: ' + d.challenge);
+            L.push('CRM/software: ' + d.crm);
+            L.push('Owner/decision-maker: ' + d.decisionMaker);
+            if (d.path === 'direct') { L.push('Interested in: ' + (d.interest||'')); L.push('Path: booked directly (no cart)'); }
+            else { L.push('Selected: ' + d.services + (d.monthly ? ' ($' + Number(d.monthly).toLocaleString() + '/mo)' : '') + (d.buildFee ? ' + $' + Number(d.buildFee).toLocaleString() + ' build' : '')); L.push('Path: checkout'); }
+            L.push('Marketing consent: ' + (d.marketingConsent ? 'yes' : 'no'));
+            L.push('Disclosures acknowledged: ' + (d.completedAt||''));
+            var notes = L.join('\n').slice(0, 1500);
+            var el = document.querySelector('.calendly-inline-widget');
+            el.setAttribute('data-url', el.getAttribute('data-url') + '&a1=' + encodeURIComponent(notes));
+          } catch(e) {}
+        })();
+      </script>
       <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
     </div>
 
@@ -96,5 +138,21 @@
     </div>
   </footer>
 
+  <script>
+    try {
+      var d = JSON.parse(localStorage.getItem('ss_intake')||'null');
+      if (d) {
+        var direct = d.path === 'direct';
+        document.getElementById('intake-line').textContent =
+          d.business + (d.industry ? ' · ' + d.industry : '') + (d.area ? ' · ' + d.area : '') +
+          (direct ? (d.interest ? ' · Interested in: ' + d.interest : '')
+                  : ((d.services ? ' · Selected: ' + d.services : '') + (d.monthly ? ' ($' + Number(d.monthly).toLocaleString() + '/mo)' : '')));
+        document.getElementById('intake-note').textContent = direct
+          ? 'This call is a consultation — fees and terms are explained before you agree to enroll in anything. Please join 5–10 minutes early.'
+          : 'Due today: $0 — this call is a consultation request, not a purchase or service activation. Please join 5–10 minutes early.';
+        document.getElementById('intake-summary').classList.remove('hidden');
+      }
+    } catch(e) {}
+  </script>
 </body>
 </html>
