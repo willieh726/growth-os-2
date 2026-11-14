@@ -3,7 +3,12 @@ import { supabase } from "@/lib/supabase";
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    // ngrok free tier shows an interstitial warning page for browser requests;
+    // this header bypasses it so fetch() gets the actual API response.
+    "ngrok-skip-browser-warning": "1",
+  };
   if (supabase) {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
