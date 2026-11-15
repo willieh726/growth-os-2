@@ -184,6 +184,14 @@
                    placeholder="(555) 555-5555" autocomplete="tel"/>
           </div>
 
+          <!-- Contact name -->
+          <div>
+            <label class="label" for="contact_name">Your Name <span>*</span></label>
+            <input id="contact_name" name="contact_name" type="text" class="input-field"
+                   placeholder="Jane Smith" autocomplete="name" required/>
+            <p class="error-msg hidden text-xs text-red-400 mt-1.5">Please enter your name.</p>
+          </div>
+
           <!-- Email -->
           <div>
             <label class="label" for="contact_email">Your Email Address <span>*</span></label>
@@ -276,10 +284,12 @@
       const url = document.getElementById('website_url').value.trim();
       const email = document.getElementById('contact_email').value.trim();
 
+      const name = document.getElementById('contact_name').value.trim();
       showErr('business_name', !bn);       if (!bn)    ok = false;
       showErr('city',          !city);     if (!city)  ok = false;
       showErr('state',         !state);    if (!state) ok = false;
       showErr('website_url',   !validateUrl(url)); if (!validateUrl(url)) ok = false;
+      showErr('contact_name',  !name);     if (!name)  ok = false;
       showErr('contact_email', !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ok = false;
       return ok;
@@ -302,6 +312,7 @@
         state:         document.getElementById('state').value,
         website_url:   websiteUrl || null,
         phone:         document.getElementById('phone').value.trim() || null,
+        contact_name:  document.getElementById('contact_name').value.trim() || null,
         contact_email: document.getElementById('contact_email').value.trim(),
       };
 

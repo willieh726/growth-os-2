@@ -29,6 +29,7 @@ class AuditRequestBody(BaseModel):
     website_url: str | None = None
     phone: str | None = None
     contact_email: str
+    contact_name: str | None = None
 
 
 @router.post("", dependencies=[Depends(require_user)])
