@@ -22,12 +22,11 @@ export default async function PublicAudit({ params }: { params: { slug: string }
       </div>
     );
   }
-  const audit: { content_md: string; name: string; created_at: string; contact_name?: string; contact_email?: string } = await res.json();
+  const audit: { content_md: string; name: string; created_at: string; contact_email?: string } = await res.json();
 
   // Build prefilled Calendly URL
   const calendlyBase = "https://calendly.com/williamhoge1/30min";
   const bookParams = new URLSearchParams();
-  if (audit.contact_name) bookParams.set("name", audit.contact_name);
   if (audit.contact_email) bookParams.set("email", audit.contact_email);
   const bookUrl = bookParams.toString() ? `${calendlyBase}?${bookParams}` : calendlyBase;
 

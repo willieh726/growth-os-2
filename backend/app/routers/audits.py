@@ -276,7 +276,7 @@ async def public_audit(slug: str):
     pool = await get_pool()
     row = await pool.fetchrow(
         """select a.content_md, a.created_at, b.name,
-                  il.contact_name, il.contact_email
+                  il.contact_email
            from audits a
            join businesses b on b.id = a.business_id
            left join inbound_leads il on il.audit_id = a.id
