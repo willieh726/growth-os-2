@@ -201,7 +201,7 @@ def _audit_email_html(business_name: str, share_url: str, contact_email: str = "
         book_params["name"] = contact_name
     if contact_email:
         book_params["email"] = contact_email
-    book_url = "https://signalsyncagency.com/book"
+    book_url = "https://calendly.com/williamhoge1/30min"
     if book_params:
         book_url += "?" + urlencode(book_params)
     return f"""
