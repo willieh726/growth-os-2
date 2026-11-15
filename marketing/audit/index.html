@@ -173,8 +173,8 @@
           <div class="sm:col-span-2">
             <label class="label" for="website_url">Website URL <span>(if you have one)</span></label>
             <input id="website_url" name="website_url" type="url" class="input-field"
-                   placeholder="https://yoursite.com" autocomplete="url"/>
-            <p class="error-msg hidden text-xs text-red-400 mt-1.5">Please enter a valid URL starting with https://</p>
+                   placeholder="yoursite.com" autocomplete="url"/>
+            <p class="error-msg hidden text-xs text-red-400 mt-1.5">Please enter a valid website address</p>
           </div>
 
           <!-- Phone -->
@@ -264,7 +264,7 @@
 
     function validateUrl(val) {
       if (!val) return true; // optional
-      try { const u = new URL(val); return u.protocol === 'https:' || u.protocol === 'http:'; }
+      try { const u = new URL(val.match(/^https?:\/\//) ? val : 'https://' + val); return !!u.hostname; }
       catch { return false; }
     }
 
