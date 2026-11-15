@@ -108,7 +108,7 @@ def compute_score(facts: BusinessFacts, site: SiteSignals) -> tuple[int, dict]:
     rc = facts.gbp_review_count or 0
     pts = max(0, round(MAX["low_reviews"] * (1 - min(rc, 25) / 25)))
     b["low_reviews"] = {"points": pts, "max": MAX["low_reviews"],
-                        "reason": f"{rc} Google reviews (competitors in CT average 40+)"}
+                        "reason": f"{rc} Google reviews" + (" — no reviews yet" if rc == 0 else "")}
 
     # 6 & 7. Contact form / quote request.
     if blocked:

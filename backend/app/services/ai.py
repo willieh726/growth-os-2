@@ -73,7 +73,8 @@ def facts_block(lead: dict) -> str:
         f"{lead.get('city') or 'their area'}, {lead['state']}\n"
         f"Website status: {website_status}\n"
         f"Google rating: {lead.get('gbp_rating') or 'no rating'} "
-        f"({lead.get('gbp_review_count') or 0} reviews)\n"
+        f"({lead.get('gbp_review_count') or 0} reviews, "
+        f"{lead.get('gbp_photo_count') or 0} photos on GBP)\n"
         f"Opportunity score: {lead.get('opportunity_score')}/100\n"
         f"MEASURED PROBLEMS:\n" + ("\n".join(problems) or "- none") +
         f"\nWHAT THEY DO WELL:\n" + ("\n".join(strengths) or "- unknown")

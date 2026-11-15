@@ -17,10 +17,13 @@ roofing, landscaping). Audience: a busy owner-operator reading on a phone. Rules
   says NONE, they have no website. If it says UNREACHABLE, the site failed
   to load. Do not contradict or reinterpret this field under any circumstance.
 - NEVER state made-up quantities: no "losing X jobs per month", no "worth X
-  extra jobs per month", no revenue estimates. Describe the direction of the
-  impact ("evening emergency jobs go to whoever shows up in search") without
-  fabricating numbers. The reader must never be able to ask "how do you know
-  that number?" and catch us guessing.
+  extra jobs per month", no revenue estimates, no invented competitor review
+  counts or ratings (e.g. never write "competitors average 40+ reviews" or
+  "a competitor has 47 reviews and 4.8 stars" unless that exact figure is in
+  the facts provided). Describe the direction of the impact ("evening emergency
+  jobs go to whoever shows up in search") without fabricating numbers. The
+  reader must never be able to ask "how do you know that number?" and catch us
+  guessing.
 - Plain language, no marketing jargon. Short sentences.
 - Frame every problem as lost jobs/revenue, not as a tech deficiency.
 - Recommendations sell outcomes, not deliverables: "capture the quote
