@@ -3,6 +3,7 @@ signals the scorer consumes. Static HTML analysis (no headless browser)
 is a deliberate tradeoff: it covers >95% of small-contractor sites,
 costs ~nothing, and runs thousands/hour. A Playwright pass can be added
 later behind the same snapshot table."""
+import json
 import re
 import time
 from dataclasses import dataclass, asdict
@@ -145,7 +146,7 @@ async def save_snapshot(conn, business_id: str, sig: SiteSignals) -> None:
         sig.has_viewport_meta, sig.has_contact_form, sig.has_quote_cta,
         sig.has_title, sig.title_text, sig.has_meta_description, sig.has_h1,
         sig.has_schema_org, sig.copyright_year, sig.detected_builder,
-        sig.page_bytes, sig.load_ms, asdict(sig),
+        sig.page_bytes, sig.load_ms, json.dumps(asdict(sig)),
     )
 
 
