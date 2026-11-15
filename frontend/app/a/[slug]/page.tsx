@@ -22,7 +22,14 @@ export default async function PublicAudit({ params }: { params: { slug: string }
       </div>
     );
   }
-  const audit: { content_md: string; name: string; created_at: string } = await res.json();
+  const audit: { content_md: string; name: string; created_at: string; contact_name?: string; contact_email?: string } = await res.json();
+
+  // Build prefilled Calendly URL
+  const calendlyBase = "https://calendly.com/williamhoge1/30min";
+  const bookParams = new URLSearchParams();
+  if (audit.contact_name) bookParams.set("name", audit.contact_name);
+  if (audit.contact_email) bookParams.set("email", audit.contact_email);
+  const bookUrl = bookParams.toString() ? `${calendlyBase}?${bookParams}` : calendlyBase;
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-8 sm:py-12">
@@ -95,8 +102,16 @@ export default async function PublicAudit({ params }: { params: { slug: string }
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a
-              href="tel:+14155801702"
+              href={bookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="rounded-lg bg-emerald-600 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Book a free 30-min call →
+            </a>
+            <a
+              href="tel:+14155801702"
+              className="rounded-lg border border-gray-300 px-5 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-100"
             >
               Call Will — (415) 580-1702
             </a>
