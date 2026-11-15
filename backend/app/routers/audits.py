@@ -152,6 +152,7 @@ async def request_audit(body: AuditRequestBody):
             business_name=body.business_name,
             share_url=share_url,
             content_md=content,
+            contact_name=body.contact_name or "",
         )
     except Exception as exc:
         log.error("failed to email audit to %s: %s", body.contact_email, exc)
@@ -159,7 +160,7 @@ async def request_audit(body: AuditRequestBody):
     return {"share_slug": slug, "share_url": share_url}
 
 
-async def _send_audit_email(to_email: str, business_name: str, share_url: str, content_md: str):
+async def _send_audit_email(to_email: str, business_name: str, share_url: str, content_md: str, contact_name: str = ""):
     """Send the audit share link via Resend (or log if not configured)."""
     settings = get_settings()
     if not settings.resend_api_key:
@@ -174,7 +175,7 @@ async def _send_audit_email(to_email: str, business_name: str, share_url: str, c
         "from": f"{from_name} <{from_email}>",
         "to": [to_email],
         "subject": f"Your free visibility audit — {business_name}",
-        "html": _audit_email_html(business_name, share_url),
+        "html": _audit_email_html(business_name, share_url, to_email, contact_name),
     }
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.post(
@@ -186,7 +187,16 @@ async def _send_audit_email(to_email: str, business_name: str, share_url: str, c
             raise RuntimeError(f"Resend {resp.status_code}: {resp.text[:200]}")
 
 
-def _audit_email_html(business_name: str, share_url: str) -> str:
+def _audit_email_html(business_name: str, share_url: str, contact_email: str = "", contact_name: str = "") -> str:
+    from urllib.parse import urlencode
+    book_params = {}
+    if contact_name:
+        book_params["name"] = contact_name
+    if contact_email:
+        book_params["email"] = contact_email
+    book_url = "https://signalsyncagency.com/book"
+    if book_params:
+        book_url += "?" + urlencode(book_params)
     return f"""
 <!DOCTYPE html>
 <html>
@@ -208,7 +218,7 @@ def _audit_email_html(business_name: str, share_url: str) -> str:
     </a>
     <p style="color:#6b7280;font-size:13px;margin-top:28px;line-height:1.6;">
       Questions? Just reply to this email — same team.<br/>
-      <a href="https://signalsyncagency.com/book" style="color:#34D399;">Book a free 30-min call</a> if you want to walk through it together.
+      <a href="{book_url}" style="color:#34D399;">Book a free 30-min call</a> if you want to walk through it together.
     </p>
     <hr style="border:none;border-top:1px solid #1f2937;margin:32px 0;"/>
     <p style="color:#374151;font-size:11px;">

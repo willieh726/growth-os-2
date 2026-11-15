@@ -96,10 +96,22 @@
 
     <!-- Calendly embed -->
     <div class="rounded-2xl border border-emerald-500/20 bg-gray-900/60 overflow-hidden">
-      <div class="calendly-inline-widget"
+      <div class="calendly-inline-widget" id="calendly-widget"
            data-url="https://calendly.com/williamhoge1/30min?hide_event_type_details=1&background_color=030712&text_color=f9fafb&primary_color=34d399"
            style="min-width:320px;height:700px;"></div>
       <script>
+        // Prefill name and email from URL params (passed via audit email link)
+        (function() {
+          var params = new URLSearchParams(window.location.search);
+          var name  = params.get('name');
+          var email = params.get('email');
+          var el = document.getElementById('calendly-widget');
+          var url = el.getAttribute('data-url');
+          if (name)  url += '&name='  + encodeURIComponent(name);
+          if (email) url += '&email=' + encodeURIComponent(email);
+          el.setAttribute('data-url', url);
+        })();
+
         // Pass the questionnaire answers into Calendly's "anything that will help prepare" notes field (a1)
         (function(){
           try {
