@@ -105,13 +105,19 @@ async def request_audit(body: AuditRequestBody):
             # placeholder since inbound prospects don't always specify.
             import re as _re
             normalized = _re.sub(r"[^a-z0-9 ]", "", body.business_name.lower()).strip()
+            normalized = normalized or body.business_name.lower()
             biz_row = await conn.fetchrow(
                 """insert into businesses
                      (name, normalized_name, city, state, website_url, phone,
                       industry, source)
                    values ($1,$2,$3,$4,$5,$6,'tree_service','manual')
+                   on conflict (normalized_name, city, state)
+                   do update set
+                     website_url = excluded.website_url,
+                     phone       = excluded.phone,
+                     updated_at  = now()
                    returning id""",
-                body.business_name, normalized or body.business_name.lower(),
+                body.business_name, normalized,
                 body.city, body.state, body.website_url, body.phone,
             )
             biz_id = biz_row["id"]
