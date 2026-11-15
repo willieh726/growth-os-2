@@ -144,10 +144,10 @@ async def request_audit(body: AuditRequestBody):
             await conn.execute(
                 """insert into inbound_leads
                      (business_name, city, state, website_url, phone,
-                      contact_email, audit_id, share_slug)
-                   values ($1,$2,$3,$4,$5,$6,$7,$8)""",
+                      contact_email, contact_name, audit_id, share_slug)
+                   values ($1,$2,$3,$4,$5,$6,$7,$8,$9)""",
                 body.business_name, body.city, body.state, body.website_url,
-                body.phone, body.contact_email, audit_id, slug,
+                body.phone, body.contact_email, body.contact_name, audit_id, slug,
             )
 
     share_url = f"{settings.frontend_url}/a/{slug}"
@@ -289,7 +289,7 @@ async def public_audit(slug: str):
     pool = await get_pool()
     row = await pool.fetchrow(
         """select a.content_md, a.created_at, b.name,
-                  il.contact_email
+                  il.contact_name, il.contact_email
            from audits a
            join businesses b on b.id = a.business_id
            left join inbound_leads il on il.audit_id = a.id
