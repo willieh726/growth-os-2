@@ -141,6 +141,9 @@ STATE_CITIES: dict[str, list[str]] = {
     ],
 }
 
-INDUSTRIES = ["tree_service", "excavation", "septic", "concrete",
-              "hvac", "plumbing", "electrical", "roofing", "landscaping",
-              "pressure_washing", "cleaning"]
+# Ordered by revenue yield / willingness to invest — highest ticket first
+INDUSTRIES = [
+    "roofing", "hvac", "tree_service", "excavation",
+    "plumbing", "electrical", "septic", "concrete", "landscaping",
+    "pressure_washing", "cleaning",
+]

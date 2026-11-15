@@ -7,11 +7,24 @@ type Run = {
   status: string; stats: Record<string, number>; created_at: string; error: string | null;
 };
 
-const STATES = ["CT","MA","RI","NY","NJ","PA","MD","VA","NC","SC"];
+// Ordered wealth-first: highest median income / home value at top.
+// Wealthy markets = higher ticket jobs, thinner competition, more no-website owners.
+const STATES: { code: string; label: string }[] = [
+  { code: "CT", label: "CT — Gold Coast / Fairfield County" },
+  { code: "NJ", label: "NJ — Bergen / Morris / Somerset" },
+  { code: "MA", label: "MA — MetroWest / North Shore" },
+  { code: "NY", label: "NY — Westchester / Hamptons" },
+  { code: "VA", label: "VA — NoVA / McLean / Arlington" },
+  { code: "MD", label: "MD — Potomac / Bethesda" },
+  { code: "PA", label: "PA — Main Line / Sewickley" },
+  { code: "RI", label: "RI — Barrington / East Greenwich" },
+  { code: "NC", label: "NC — Charlotte suburbs / Asheville" },
+  { code: "SC", label: "SC — Kiawah / Mt. Pleasant" },
+];
 
 export default function Runs() {
   const [runs, setRuns] = useState<Run[]>([]);
-  const [industry, setIndustry] = useState("tree_service");
+  const [industry, setIndustry] = useState("roofing");
   const [state, setState] = useState("CT");
   const [busy, setBusy] = useState(false);
 
@@ -39,7 +52,7 @@ export default function Runs() {
           <label className="text-xs text-gray-500">State</label>
           <select value={state} onChange={e => setState(e.target.value)}
             className="block rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            {STATES.map(s => <option key={s}>{s}</option>)}
+            {STATES.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
           </select>
         </div>
         <button onClick={start} disabled={busy}

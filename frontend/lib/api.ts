@@ -59,7 +59,18 @@ export type Business = {
 };
 
 export const STAGES = ["new","qualified","contacted","replied","meeting","proposal","won","lost"];
-export const INDUSTRIES = ["tree_service","excavation","septic","concrete","hvac","plumbing","electrical","roofing","landscaping"];
+// Ordered by revenue yield / willingness to invest — highest ticket first
+export const INDUSTRIES = [
+  "roofing",        // highest ticket, recurring storm damage
+  "hvac",           // high ticket, emergency-driven
+  "tree_service",   // high ticket, wealthy homeowners
+  "excavation",     // project-based, good margins
+  "plumbing",       // emergency + project
+  "electrical",     // licensed trade, good margins
+  "septic",         // niche, low competition
+  "concrete",       // project-based
+  "landscaping",    // recurring but lower ticket
+];
 export const label = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 export function scoreColor(n: number | null): string {
