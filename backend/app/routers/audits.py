@@ -160,6 +160,9 @@ async def request_audit(body: AuditRequestBody):
             share_url=share_url,
             content_md=content,
             contact_name=body.contact_name or "",
+            city=body.city,
+            state=body.state,
+            website_url=body.website_url or "",
         )
     except Exception as exc:
         log.error("failed to email audit to %s: %s", body.contact_email, exc)
@@ -167,7 +170,8 @@ async def request_audit(body: AuditRequestBody):
     return {"share_slug": slug, "share_url": share_url}
 
 
-async def _send_audit_email(to_email: str, business_name: str, share_url: str, content_md: str, contact_name: str = ""):
+async def _send_audit_email(to_email: str, business_name: str, share_url: str, content_md: str, contact_name: str = "",
+                            city: str = "", state: str = "", website_url: str = ""):
     """Send the audit share link via Resend (or log if not configured)."""
     settings = get_settings()
     if not settings.resend_api_key:
@@ -182,7 +186,7 @@ async def _send_audit_email(to_email: str, business_name: str, share_url: str, c
         "from": f"{from_name} <{from_email}>",
         "to": [to_email],
         "subject": f"Your free visibility audit — {business_name}",
-        "html": _audit_email_html(business_name, share_url, to_email, contact_name),
+        "html": _audit_email_html(business_name, share_url, to_email, contact_name, city, state, website_url),
     }
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.post(
@@ -194,13 +198,22 @@ async def _send_audit_email(to_email: str, business_name: str, share_url: str, c
             raise RuntimeError(f"Resend {resp.status_code}: {resp.text[:200]}")
 
 
-def _audit_email_html(business_name: str, share_url: str, contact_email: str = "", contact_name: str = "") -> str:
+def _audit_email_html(business_name: str, share_url: str, contact_email: str = "", contact_name: str = "",
+                      city: str = "", state: str = "", website_url: str = "") -> str:
     from urllib.parse import urlencode
     book_params = {}
     if contact_name:
         book_params["name"] = contact_name
     if contact_email:
         book_params["email"] = contact_email
+    # Prefill pre-call notes (a1) with business context so host is prepared
+    notes_parts = [f"Business: {business_name}"]
+    if city or state:
+        notes_parts.append(f"City: {city}, {state}".strip(", "))
+    if website_url:
+        notes_parts.append(f"Website: {website_url}")
+    notes_parts.append("Booked from: audit link")
+    book_params["a1"] = "\n".join(notes_parts)
     book_url = "https://calendly.com/williamhoge1/30min"
     if book_params:
         book_url += "?" + urlencode(book_params)

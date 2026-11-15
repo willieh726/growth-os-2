@@ -24,11 +24,13 @@ export default async function PublicAudit({ params }: { params: { slug: string }
   }
   const audit: { content_md: string; name: string; created_at: string; contact_email?: string } = await res.json();
 
-  // Build prefilled Calendly URL
+  // Build prefilled Calendly URL with email + pre-call notes (a1)
   const calendlyBase = "https://calendly.com/williamhoge1/30min";
   const bookParams = new URLSearchParams();
   if (audit.contact_email) bookParams.set("email", audit.contact_email);
-  const bookUrl = bookParams.toString() ? `${calendlyBase}?${bookParams}` : calendlyBase;
+  const notes = [`Business: ${audit.name}`, "Booked from: audit link"].join("\n");
+  bookParams.set("a1", notes);
+  const bookUrl = `${calendlyBase}?${bookParams}`;
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-8 sm:py-12">
