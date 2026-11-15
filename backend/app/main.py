@@ -28,6 +28,7 @@ _front = (get_settings().frontend_url or "").rstrip("/")
 _origins = [o for o in {
     _front,
     "https://growth-os-2-uwis.vercel.app",
+    "https://signalsyncagency.com",
     "http://localhost:3000",
 } if o]
 
