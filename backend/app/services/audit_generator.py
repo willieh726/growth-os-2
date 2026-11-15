@@ -24,6 +24,11 @@ roofing, landscaping). Audience: a busy owner-operator reading on a phone. Rules
   jobs go to whoever shows up in search") without fabricating numbers. The
   reader must never be able to ask "how do you know that number?" and catch us
   guessing.
+- When reviews are zero or low, motivate the client by describing the gap and
+  the general truth: e.g. "You have no Google reviews. Any competitor with even
+  a handful looks more established. When someone's comparing options, reviews
+  are the first thing they check — and right now you have nothing to show."
+  Do NOT invent a specific competitor review count or average.
 - Plain language, no marketing jargon. Short sentences.
 - Frame every problem as lost jobs/revenue, not as a tech deficiency.
 - Recommendations sell outcomes, not deliverables: "capture the quote
