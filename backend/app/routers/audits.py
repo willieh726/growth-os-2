@@ -220,6 +220,38 @@ def _audit_email_html(business_name: str, share_url: str) -> str:
 """
 
 
+@router.get("/inbound", dependencies=[Depends(require_user)])
+async def list_inbound_leads():
+    """Authenticated — returns all inbound_leads rows for the dashboard."""
+    pool = await get_pool()
+    rows = await pool.fetch(
+        """select id, business_name, city, state, website_url, phone,
+                  contact_email, audit_id, share_slug, status, notes, created_at
+           from inbound_leads
+           order by created_at desc"""
+    )
+    return [dict(r) for r in rows]
+
+
+@router.patch("/inbound/{lead_id}", dependencies=[Depends(require_user)])
+async def update_inbound_lead(lead_id: str, body: dict):
+    """Update status or notes on an inbound lead."""
+    allowed = {"status", "notes"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+    if not updates:
+        raise HTTPException(400, "nothing to update")
+    pool = await get_pool()
+    sets = ", ".join(f"{k}=${i+2}" for i, k in enumerate(updates))
+    vals = list(updates.values())
+    row = await pool.fetchrow(
+        f"update inbound_leads set {sets} where id=$1 returning id",
+        lead_id, *vals
+    )
+    if not row:
+        raise HTTPException(404, "lead not found")
+    return {"ok": True}
+
+
 @router.get("/public/{slug}")
 async def public_audit(slug: str):
     """Unauthenticated — this is the link prospects click from cold emails.
