@@ -29,8 +29,8 @@ export async function GET() {
     { data: leads },
     { count: emailSent },
     { count: emailReplied },
-    { count: sequencesActive },
-    { count: sequencesStopped },
+    seqActiveResult,
+    seqStoppedResult,
     { data: bizRows },
     { data: scoreRows },
   ] = await Promise.all([
@@ -45,6 +45,10 @@ export async function GET() {
     supabase.from("businesses").select("id, industry"),
     supabase.from("opportunity_scores").select("business_id, total"),
   ]);
+
+  // sequence_enrollments table may not exist yet — treat errors as 0
+  const sequencesActive = seqActiveResult.error ? 0 : (seqActiveResult.count ?? 0);
+  const sequencesStopped = seqStoppedResult.error ? 0 : (seqStoppedResult.count ?? 0);
 
   const allScores = (scores ?? []).map((r: { total: number }) => r.total);
   const hot = allScores.filter((t) => t >= 60).length;
