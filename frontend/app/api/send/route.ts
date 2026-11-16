@@ -63,6 +63,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Business has no email address on file" }, { status: 400 });
   }
 
+  // Build HTML email with Signal Sync branding
+  const bodyHtml = msg.body
+    .split("\n")
+    .map((line: string) => line.trim() === "" ? "<br>" : `<p style="margin:0 0 14px 0;line-height:1.6">${line}</p>`)
+    .join("\n");
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden">
+        <!-- Header with logo -->
+        <tr>
+          <td style="background:#0f172a;padding:20px 32px">
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:10px">
+                  <svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="44" r="6" fill="#34D399"/>
+                    <path d="M20 32 A12 12 0 0 1 32 44" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/>
+                    <path d="M20 23 A21 21 0 0 1 41 44" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/>
+                    <path d="M20 14 A30 30 0 0 1 50 44" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/>
+                  </svg>
+                </td>
+                <td style="vertical-align:middle">
+                  <span style="color:#ffffff;font-size:17px;font-weight:600;letter-spacing:-0.3px">${fromName}</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px 32px 24px 32px;color:#1e293b;font-size:15px">
+            ${bodyHtml}
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding:16px 32px 28px 32px;border-top:1px solid #e2e8f0">
+            <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.5">
+              ${fromName} · <a href="https://signalsyncagency.com" style="color:#34D399;text-decoration:none">signalsyncagency.com</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
   // Send via Resend
   const resend = new Resend(resendKey);
   const { error: sendErr } = await resend.emails.send({
@@ -70,6 +123,7 @@ export async function POST(req: NextRequest) {
     to: toEmail,
     subject: msg.subject,
     text: msg.body,
+    html,
   });
 
   if (sendErr) {
