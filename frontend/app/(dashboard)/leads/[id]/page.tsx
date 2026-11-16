@@ -2,7 +2,7 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { api, Lead, STAGES, label, scoreColor } from "@/lib/api";
+import { Lead, STAGES, label, scoreColor } from "@/lib/api";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -135,27 +135,45 @@ export default function LeadDetail() {
           <h2 className="mb-3 font-semibold">Actions</h2>
           <div className="flex flex-wrap gap-2 text-sm">
             <button disabled={!!busy}
-              onClick={() => run("audit", async () => setAudit(await api.post<Audit>(`/audits`, { business_id: lead.business_id, lead_id: lead.id })))}
+              onClick={() => run("audit", async () => {
+                const r = await fetch("/api/audit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ business_id: lead.business_id, lead_id: lead.id }) });
+                if (!r.ok) throw new Error(await r.text());
+                setAudit(await r.json());
+              })}
               className="rounded-lg bg-gray-900 px-3 py-2 text-white hover:bg-gray-700 disabled:opacity-50">
               {busy === "audit" ? "Generating…" : "Generate audit"}
             </button>
             <button disabled={!!busy}
-              onClick={() => run("email", async () => setDraft(await api.post<Draft>(`/outreach/leads/${lead.id}/email`, { intent: "initial_value" })))}
+              onClick={() => run("email", async () => {
+                const r = await fetch("/api/email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lead_id: lead.id, intent: "initial_outreach" }) });
+                if (!r.ok) throw new Error(await r.text());
+                setDraft(await r.json());
+              })}
               className="rounded-lg bg-gray-900 px-3 py-2 text-white hover:bg-gray-700 disabled:opacity-50">
               {busy === "email" ? "Writing…" : "Draft cold email"}
             </button>
             <button disabled={!!busy}
-              onClick={() => run("script", async () => setScript(await api.post<Script>(`/outreach/leads/${lead.id}/call-script`)))}
+              onClick={() => run("script", async () => {
+                const r = await fetch("/api/call-script", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lead_id: lead.id }) });
+                if (!r.ok) throw new Error(await r.text());
+                setScript(await r.json());
+              })}
               className="rounded-lg bg-gray-900 px-3 py-2 text-white hover:bg-gray-700 disabled:opacity-50">
               {busy === "script" ? "Writing…" : "Call script"}
             </button>
             <button disabled={!!busy}
-              onClick={() => run("enroll", () => api.post(`/outreach/leads/${lead.id}/enroll`))}
+              onClick={() => run("enroll", async () => {
+                const r = await fetch("/api/enroll", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lead_id: lead.id }) });
+                if (!r.ok) throw new Error(await r.text());
+              })}
               className="rounded-lg border border-gray-300 px-3 py-2 hover:bg-gray-100 disabled:opacity-50">
               Enroll in sequence
             </button>
             <button disabled={!!busy}
-              onClick={() => run("stop", () => api.post(`/outreach/leads/${lead.id}/stop`))}
+              onClick={() => run("stop", async () => {
+                const r = await fetch("/api/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lead_id: lead.id }) });
+                if (!r.ok) throw new Error(await r.text());
+              })}
               className="rounded-lg border border-red-300 px-3 py-2 text-red-600 hover:bg-red-50 disabled:opacity-50">
               Stop sequence
             </button>
@@ -183,7 +201,11 @@ export default function LeadDetail() {
             <p className="text-sm font-medium">Subject: {draft.subject}</p>
             <pre className="mt-2 whitespace-pre-wrap font-sans text-sm">{draft.body}</pre>
             <button
-              onClick={() => run("send", () => api.post(`/outreach/messages/${draft.message_id}/send`).then(() => setDraft(null)))}
+              onClick={() => run("send", async () => {
+                const r = await fetch("/api/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message_id: draft.message_id }) });
+                if (!r.ok) throw new Error(await r.text());
+                setDraft(null);
+              })}
               className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
               {busy === "send" ? "Sending…" : "Send now"}
             </button>
