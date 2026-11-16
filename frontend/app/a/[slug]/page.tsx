@@ -27,13 +27,10 @@ export default async function PublicAudit({ params }: { params: { slug: string }
 
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
+  // Fetch audit row (no FK joins — not in schema cache)
   const { data: auditRow } = await supabase
     .from("audits")
-    .select(`
-      id, content_md, created_at,
-      businesses ( name, email ),
-      leads ( id )
-    `)
+    .select("id, content_md, created_at, business_id, lead_id")
     .eq("share_slug", params.slug)
     .maybeSingle();
 
@@ -45,36 +42,26 @@ export default async function PublicAudit({ params }: { params: { slug: string }
     );
   }
 
-  type AuditRow = {
-    id: string;
-    content_md: string;
-    created_at: string;
-    businesses: { name: string; email: string | null } | null;
-    leads: { id: string } | { id: string }[] | null;
-  };
-  const row = auditRow as AuditRow;
+  const row = auditRow as { id: string; content_md: string; created_at: string; business_id: string | null; lead_id: string | null };
+
+  // Fetch related data in parallel
+  const [bizResult, leadResult] = await Promise.all([
+    row.business_id
+      ? supabase.from("businesses").select("name, email").eq("id", row.business_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    row.lead_id
+      ? supabase.from("leads").select("contact_name, contact_email").eq("id", row.lead_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const bizRow = bizResult.data as { name: string; email: string | null } | null;
+  const leadRow = leadResult.data as { contact_name?: string | null; contact_email?: string | null } | null;
 
   // Pull contact info from the linked lead if any
-  let contactName: string | undefined;
-  let contactEmail: string | undefined;
+  const contactName: string | undefined = leadRow?.contact_name ?? undefined;
+  const contactEmail: string | undefined = leadRow?.contact_email ?? undefined;
 
-  const leadId = Array.isArray(row.leads)
-    ? (row.leads[0] as { id: string } | undefined)?.id
-    : (row.leads as { id: string } | null)?.id;
-
-  if (leadId) {
-    const { data: leadRow } = await supabase
-      .from("leads")
-      .select("contact_name, contact_email")
-      .eq("id", leadId)
-      .maybeSingle();
-    if (leadRow) {
-      contactName = (leadRow as { contact_name?: string }).contact_name ?? undefined;
-      contactEmail = (leadRow as { contact_email?: string }).contact_email ?? undefined;
-    }
-  }
-
-  const bizName = row.businesses?.name ?? "Your Business";
+  const bizName = bizRow?.name ?? "Your Business";
   const contentMd = row.content_md;
 
   // Build prefilled Calendly URL with name, email + pre-call notes (a1)
