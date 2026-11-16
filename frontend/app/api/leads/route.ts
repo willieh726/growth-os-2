@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
 
   let q = supabase
     .from("leads")
-    .select("id, stage, business_id, created_at")
-    .order("created_at", { ascending: false })
+    .select("id, stage, business_id, promoted_at")
+    .order("promoted_at", { ascending: false })
     .limit(limit);
 
   if (stage) q = q.eq("stage", stage);
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Flatten into Lead shape
-  const leads = rows.map((r: { id: string; business_id: string; stage: string; created_at: string }) => {
+  const leads = rows.map((r: { id: string; business_id: string; stage: string; promoted_at: string }) => {
     const b = bizMap[r.business_id] ?? {} as BizRow;
     const s = scoreMap[r.business_id] ?? null;
     return {
