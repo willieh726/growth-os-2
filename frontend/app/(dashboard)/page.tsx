@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { label } from "@/lib/api";
 
 type Stats = {
@@ -28,18 +28,48 @@ function Card({ title, value, sub }: { title: string; value: React.ReactNode; su
 export default function Dashboard() {
   const [s, setS] = useState<Stats | null>(null);
   const [err, setErr] = useState("");
+  const [rescoring, setRescoring] = useState(false);
+  const [rescoreStatus, setRescoreStatus] = useState("");
+  const stopRef = useRef(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch("/api/dashboard");
+  const loadStats = async () => {
+    try {
+      const r = await fetch("/api/dashboard");
+      if (!r.ok) throw new Error(await r.text());
+      setS(await r.json());
+    } catch (e) {
+      setErr(String(e));
+    }
+  };
+
+  useEffect(() => { loadStats(); }, []);
+
+  const runRescore = async () => {
+    setRescoring(true);
+    stopRef.current = false;
+    let totalScored = 0;
+
+    try {
+      while (!stopRef.current) {
+        setRescoreStatus(`Scoring… ${totalScored} done`);
+        const r = await fetch("/api/rescore?limit=20", { method: "POST" });
         if (!r.ok) throw new Error(await r.text());
-        setS(await r.json());
-      } catch (e) {
-        setErr(String(e));
+        const { scored, message } = await r.json() as { scored: number; message?: string };
+        totalScored += scored;
+        if (scored === 0 || message?.includes("All businesses")) {
+          setRescoreStatus(`Done — ${totalScored} businesses scored`);
+          break;
+        }
+        setRescoreStatus(`Scoring… ${totalScored} done`);
       }
-    })();
-  }, []);
+      if (stopRef.current) setRescoreStatus(`Stopped at ${totalScored} scored`);
+    } catch (e) {
+      setRescoreStatus(`Error: ${String(e)}`);
+    } finally {
+      setRescoring(false);
+      loadStats();
+    }
+  };
 
   if (err) return (
     <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4">
@@ -53,7 +83,27 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          {rescoreStatus && (
+            <span className="text-sm text-gray-500">{rescoreStatus}</span>
+          )}
+          {rescoring ? (
+            <button
+              onClick={() => { stopRef.current = true; }}
+              className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+              Stop
+            </button>
+          ) : (
+            <button
+              onClick={runRescore}
+              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+              Rescore all
+            </button>
+          )}
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card title="Businesses found" value={s.totalBusinesses.toLocaleString()} />
         <Card title="No website" value={s.noWebsite.toLocaleString()} sub="highest-value targets" />
