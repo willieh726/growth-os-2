@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { Resend } from "resend";
+import { FAST_MODEL } from "@/lib/ai";
 
 export const maxDuration = 60;
 
@@ -148,7 +149,7 @@ export async function POST(req: NextRequest) {
   let message;
   try {
     message = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
+      model: FAST_MODEL,
       max_tokens: 1800,
       system: AUDIT_SYSTEM,
       messages: [{ role: "user", content: factsBlock(biz as Record<string, unknown>, scoreRow as Record<string, unknown>) }],
@@ -181,7 +182,7 @@ export async function POST(req: NextRequest) {
       content_md: contentMd,
       summary,
       share_slug: slug,
-      model: "claude-haiku-4-5",
+      model: FAST_MODEL,
     })
     .select("id, share_slug")
     .single();
