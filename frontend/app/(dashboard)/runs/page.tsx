@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api, INDUSTRIES, label } from "@/lib/api";
+import { createClient } from "@supabase/supabase-js";
+import { INDUSTRIES, label } from "@/lib/api";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type Run = {
   id: string; source: string; industry: string | null; state: string | null;
@@ -28,13 +34,30 @@ export default function Runs() {
   const [state, setState] = useState("CT");
   const [busy, setBusy] = useState(false);
 
-  const load = () => api.get<Run[]>("/ingestion/runs").then(setRuns);
+  const load = async () => {
+    const { data } = await supabase
+      .from("ingestion_runs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (data) setRuns(data as Run[]);
+  };
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, []);
 
   const start = async () => {
     setBusy(true);
-    try { await api.post("/ingestion/runs", { industry, state }); load(); }
-    catch (e) { alert(String(e)); } finally { setBusy(false); }
+    try {
+      const res = await fetch("/api/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ industry, state }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        throw new Error(err.error ?? "ingest failed");
+      }
+      load();
+    } catch (e) { alert(String(e)); } finally { setBusy(false); }
   };
 
   return (
