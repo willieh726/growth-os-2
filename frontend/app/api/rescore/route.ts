@@ -381,38 +381,48 @@ export async function POST(req: NextRequest) {
     return scoreAndReturn(supabase, businesses as BusinessRow[]);
   }
 
-  // Fetch unscored businesses via left-join filter: businesses that have no score row
-  // Using a subquery via RPC-style approach: select businesses whose IDs don't appear
-  // in opportunity_scores. We achieve this by selecting from businesses with a
-  // limit and then filtering out already-scored ones in a second pass.
-  // Approach: fetch a larger batch (limit*3) then subtract scored ones via a targeted lookup.
-  // Fetch a large batch so we can find unscored businesses even if the first
-  // N rows all happen to have scores. 500 rows is well within PostgREST limits.
-  const fetchLimit = 500;
-  const { data: allBiz, error: bizFetchErr } = await supabase
+  // Use PostgREST left-join to find businesses with no score row directly.
+  // ?select=...&opportunity_scores(business_id)=is.null filters to unscored rows.
+  const { data: businesses, error: bizFetchErr } = await supabase
     .from("businesses")
-    .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
-    .limit(fetchLimit);
+    .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered, opportunity_scores!left(business_id)")
+    .is("opportunity_scores.business_id", null)
+    .limit(limit);
 
-  if (bizFetchErr || !allBiz) {
-    return NextResponse.json({ error: bizFetchErr?.message ?? "fetch failed" }, { status: 500 });
+  if (bizFetchErr) {
+    // Fallback: manual two-pass if left-join syntax unsupported
+    const { data: allBiz, error: fallbackErr } = await supabase
+      .from("businesses")
+      .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
+      .limit(500);
+
+    if (fallbackErr || !allBiz) {
+      return NextResponse.json({ error: fallbackErr?.message ?? "fetch failed" }, { status: 500 });
+    }
+
+    const candidateIds = allBiz.map((b: BusinessRow) => b.id);
+    const { data: alreadyScored } = await supabase
+      .from("opportunity_scores")
+      .select("business_id")
+      .in("business_id", candidateIds);
+
+    const scoredSet = new Set((alreadyScored ?? []).map((r: { business_id: string }) => r.business_id));
+    const unscored = allBiz.filter((b: BusinessRow) => !scoredSet.has(b.id)).slice(0, limit);
+
+    if (!unscored.length) {
+      return NextResponse.json({ scored: 0, message: "No unscored businesses found" });
+    }
+    return scoreAndReturn(supabase, unscored as BusinessRow[]);
   }
 
-  // Check which of these have scores already (small batch — safe for NOT IN)
-  const candidateIds = allBiz.map((b: BusinessRow) => b.id);
-  const { data: alreadyScored } = await supabase
-    .from("opportunity_scores")
-    .select("business_id")
-    .in("business_id", candidateIds);
+  // Strip the joined opportunity_scores field before scoring
+  const unscored = (businesses ?? []).map(({ opportunity_scores: _os, ...b }) => b) as BusinessRow[];
 
-  const scoredSet = new Set((alreadyScored ?? []).map((r: { business_id: string }) => r.business_id));
-  const businesses = allBiz.filter((b: BusinessRow) => !scoredSet.has(b.id)).slice(0, limit);
-
-  if (!businesses.length) {
+  if (!unscored.length) {
     return NextResponse.json({ scored: 0, message: "No unscored businesses found" });
   }
 
-  return scoreAndReturn(supabase, businesses as BusinessRow[]);
+  return scoreAndReturn(supabase, unscored);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
