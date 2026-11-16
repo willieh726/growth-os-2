@@ -114,23 +114,30 @@ export async function POST(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  // Fetch lead + business + score
-  const { data: lead, error: leadErr } = await supabase
+  // Fetch lead row first, then related data in parallel (no FK joins — not in schema cache)
+  const { data: leadRow, error: leadErr } = await supabase
     .from("leads")
-    .select(`
-      id, business_id,
-      businesses ( name, industry, city, state, phone, website_url, has_website, gbp_rating, gbp_review_count, website_discovered ),
-      opportunity_scores ( total, breakdown )
-    `)
+    .select("id, business_id")
     .eq("id", lead_id)
     .single();
 
-  if (leadErr || !lead) {
+  if (leadErr || !leadRow) {
     return NextResponse.json({ error: leadErr?.message ?? "lead not found" }, { status: 404 });
   }
 
-  const biz = (Array.isArray(lead.businesses) ? lead.businesses[0] : lead.businesses) as Record<string, unknown> ?? {};
-  const score = (Array.isArray(lead.opportunity_scores) ? lead.opportunity_scores[0] : lead.opportunity_scores) as Record<string, unknown> ?? {};
+  const bizId = leadRow.business_id as string;
+
+  const [
+    { data: bizRow },
+    { data: scoreRow },
+  ] = await Promise.all([
+    supabase.from("businesses").select("name, industry, city, state, phone, website_url, has_website, gbp_rating, gbp_review_count, website_discovered").eq("id", bizId).single(),
+    supabase.from("opportunity_scores").select("total, breakdown").eq("business_id", bizId).maybeSingle(),
+  ]);
+
+  const lead = { id: leadRow.id, business_id: bizId };
+  const biz = (bizRow ?? {}) as Record<string, unknown>;
+  const score = (scoreRow ?? {}) as Record<string, unknown>;
 
   // Call Anthropic
   const anthropic = new Anthropic({ apiKey: anthropicKey });
