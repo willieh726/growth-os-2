@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
   let message;
   try {
     message = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+      model: "claude-haiku-4-5",
       max_tokens: 512,
       system: EMAIL_SYSTEM,
       messages: [{ role: "user", content: userPrompt }],
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
       subject,
       body: emailBody,
       status: "draft",
-      model: "claude-3-haiku-20240307",
+      model: "claude-haiku-4-5",
     })
     .select("id")
     .single();
