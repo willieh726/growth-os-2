@@ -170,5 +170,5 @@ export async function POST(req: NextRequest) {
     .single();
 
   // Return the draft even if save failed (outreach_messages table may not exist)
-  return NextResponse.json({ message_id: msg?.id ?? null, subject, body: emailBody });
+  return NextResponse.json({ message_id: msg?.id ?? null, subject, body: emailBody, _insert_error: insertErr?.message ?? null });
 }
