@@ -367,43 +367,43 @@ export async function POST(req: NextRequest) {
   const url = new URL(req.url);
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "20"), 50);
 
-  // Fetch unscored businesses (no entry in opportunity_scores)
-  const { data: businesses, error: fetchErr } = await supabase
-    .from("businesses")
-    .select(
-      "id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered"
-    )
-    .not(
-      "id",
-      "in",
-      // subquery workaround: fetch existing scored IDs first
-      `(select business_id from opportunity_scores)`
-    )
-    .limit(limit);
-
-  if (fetchErr) {
-    // Fallback: fetch all and filter client-side
-    const { data: allBiz, error: e2 } = await supabase
+  // If specific IDs passed via header (from /api/ingest), score only those
+  const idsHeader = req.headers.get("x-business-ids");
+  if (idsHeader) {
+    const ids = idsHeader.split(",").map((s) => s.trim()).filter(Boolean);
+    const { data: businesses, error } = await supabase
       .from("businesses")
-      .select(
-        "id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered"
-      )
-      .limit(200);
-
-    if (e2 || !allBiz) {
-      return NextResponse.json({ error: e2?.message ?? "fetch failed" }, { status: 500 });
+      .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
+      .in("id", ids);
+    if (error || !businesses) {
+      return NextResponse.json({ error: error?.message ?? "fetch failed" }, { status: 500 });
     }
-
-    const { data: scored } = await supabase
-      .from("opportunity_scores")
-      .select("business_id");
-
-    const scoredIds = new Set((scored ?? []).map((r: { business_id: string }) => r.business_id));
-    const unscored = allBiz.filter((b: BusinessRow) => !scoredIds.has(b.id)).slice(0, limit);
-    return scoreAndReturn(supabase, unscored);
+    return scoreAndReturn(supabase, businesses as BusinessRow[]);
   }
 
-  return scoreAndReturn(supabase, (businesses ?? []) as BusinessRow[]);
+  // Otherwise fetch unscored businesses
+  const { data: scored } = await supabase
+    .from("opportunity_scores")
+    .select("business_id");
+
+  const scoredIds = (scored ?? []).map((r: { business_id: string }) => r.business_id);
+
+  let query = supabase
+    .from("businesses")
+    .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
+    .limit(limit);
+
+  if (scoredIds.length > 0) {
+    query = query.not("id", "in", `(${scoredIds.map((id: string) => `'${id}'`).join(",")})`);
+  }
+
+  const { data: businesses, error: fetchErr } = await query;
+
+  if (fetchErr || !businesses) {
+    return NextResponse.json({ error: fetchErr?.message ?? "fetch failed" }, { status: 500 });
+  }
+
+  return scoreAndReturn(supabase, businesses as BusinessRow[]);
 }
 
 async function scoreAndReturn(
