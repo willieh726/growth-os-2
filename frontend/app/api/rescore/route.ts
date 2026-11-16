@@ -143,9 +143,9 @@ async function analyzeWebsite(url: string | null): Promise<SiteSignals> {
     sig.hasQuoteCta = QUOTE_RE.test(html);
 
     // Copyright year
-    const yearMatches = [
-      ...html.matchAll(/(?:©|&copy;|copyright)\s*(20\d{2})/gi),
-    ].map((m) => parseInt(m[1]));
+    const yearMatches = Array.from(
+      html.matchAll(/(?:©|&copy;|copyright)\s*(20\d{2})/gi),
+    ).map((m) => parseInt(m[1]));
     sig.copyrightYear =
       yearMatches.length > 0 ? Math.max(...yearMatches) : null;
 
