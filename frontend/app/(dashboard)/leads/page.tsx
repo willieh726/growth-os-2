@@ -1,7 +1,13 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { api, Lead, STAGES, label, scoreColor } from "@/lib/api";
+import { createClient } from "@supabase/supabase-js";
+import { Lead, STAGES, label, scoreColor } from "@/lib/api";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function Pipeline() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -16,10 +22,59 @@ export default function Pipeline() {
   const load = useCallback(() => {
     setLoading(true);
     setErr("");
-    api.get<Lead[]>(`/leads${stage ? `?stage=${stage}` : ""}`)
-      .then(setLeads)
-      .catch(e => setErr(String(e)))
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        let q = supabase
+          .from("leads")
+          .select(`
+            id, stage, business_id,
+            businesses (
+              name, industry, city, state, phone, email,
+              website_url, has_website, gbp_rating, gbp_review_count,
+              likely_fake_listing
+            ),
+            opportunity_scores ( total, breakdown )
+          `)
+          .order("created_at", { ascending: false })
+          .limit(200);
+        if (stage) q = q.eq("stage", stage);
+        const { data, error } = await q;
+        if (error) throw new Error(error.message);
+        // Flatten into Lead shape
+        const leads: Lead[] = (data ?? []).map((r: Record<string, unknown>) => {
+          const b = r.businesses as Record<string, unknown> ?? {};
+          const s = Array.isArray(r.opportunity_scores)
+            ? (r.opportunity_scores[0] as Record<string, unknown> ?? {})
+            : (r.opportunity_scores as Record<string, unknown> ?? {});
+          return {
+            id: r.id as string,
+            business_id: r.business_id as string,
+            stage: r.stage as string,
+            name: b.name as string,
+            industry: b.industry as string,
+            city: b.city as string | null,
+            state: b.state as string,
+            phone: b.phone as string | null,
+            contact_email: null,
+            business_email: b.email as string | null,
+            website_url: b.website_url as string | null,
+            has_website: b.has_website as boolean,
+            gbp_rating: b.gbp_rating as number | null,
+            gbp_review_count: b.gbp_review_count as number | null,
+            opportunity_score: s.total as number | null ?? null,
+            score_breakdown: s.breakdown as Lead["score_breakdown"] ?? null,
+            interaction_count: 0,
+            last_activity_at: null,
+            likely_fake_listing: b.likely_fake_listing as boolean | undefined,
+          };
+        });
+        setLeads(leads);
+      } catch (e) {
+        setErr(String(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [stage]);
 
   useEffect(load, [load]);
