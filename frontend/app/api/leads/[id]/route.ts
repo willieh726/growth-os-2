@@ -42,17 +42,18 @@ export async function GET(
   const bizId = leadRow.business_id as string;
 
   // Fetch related data in parallel (no FK joins — not in schema cache)
-  const [
-    { data: bizRow },
-    { data: scoreRow },
-    { data: scoredRow },
-    { data: interactionRows },
-  ] = await Promise.all([
+  const [bizRes, scoreRes, scoredRes, interactionRes] = await Promise.all([
     supabase.from("businesses").select("name, industry, city, state, phone, email, website_url, has_website, gbp_rating, gbp_review_count").eq("id", bizId).single(),
     supabase.from("opportunity_scores").select("total, breakdown").eq("business_id", bizId).maybeSingle(),
-    supabase.from("businesses_scored").select("likely_fake_listing").eq("id", bizId).single(),
+    supabase.from("businesses_scored").select("likely_fake_listing").eq("id", bizId).maybeSingle(),
     supabase.from("interactions").select("id, type, subject, occurred_at").eq("lead_id", id).order("occurred_at", { ascending: false }),
   ]);
+
+  const bizRow = bizRes.data;
+  const scoreRow = scoreRes.data;
+  // businesses_scored table may not exist — treat errors as null
+  const scoredRow = scoredRes.error ? null : scoredRes.data;
+  const interactionRows = interactionRes.data;
 
   type BizRow = { name: string; industry: string; city: string | null; state: string; phone: string | null; email: string | null; website_url: string | null; has_website: boolean; gbp_rating: number | null; gbp_review_count: number | null };
   const b = (bizRow as BizRow | null) ?? {} as BizRow;

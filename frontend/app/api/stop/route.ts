@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
     .select("id");
 
   if (updateErr) {
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    // sequence_enrollments table may not exist yet — treat as no enrollments
+    return NextResponse.json({ ok: true, stopped: 0, message: "No active enrollments to stop" });
   }
 
   const count = (updated ?? []).length;

@@ -386,7 +386,9 @@ export async function POST(req: NextRequest) {
   // in opportunity_scores. We achieve this by selecting from businesses with a
   // limit and then filtering out already-scored ones in a second pass.
   // Approach: fetch a larger batch (limit*3) then subtract scored ones via a targeted lookup.
-  const fetchLimit = Math.min(limit * 3, 150);
+  // Fetch a large batch so we can find unscored businesses even if the first
+  // N rows all happen to have scores. 500 rows is well within PostgREST limits.
+  const fetchLimit = 500;
   const { data: allBiz, error: bizFetchErr } = await supabase
     .from("businesses")
     .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
