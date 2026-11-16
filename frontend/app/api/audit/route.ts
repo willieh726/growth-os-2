@@ -145,12 +145,18 @@ export async function POST(req: NextRequest) {
 
   // Call Anthropic
   const anthropic = new Anthropic({ apiKey: anthropicKey });
-  const message = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 1800,
-    system: AUDIT_SYSTEM,
-    messages: [{ role: "user", content: factsBlock(biz as Record<string, unknown>, scoreRow as Record<string, unknown>) }],
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1800,
+      system: AUDIT_SYSTEM,
+      messages: [{ role: "user", content: factsBlock(biz as Record<string, unknown>, scoreRow as Record<string, unknown>) }],
+    });
+  } catch (aiErr) {
+    const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+    return NextResponse.json({ error: `AI error: ${msg}` }, { status: 500 });
+  }
 
   const contentMd = message.content
     .filter((b) => b.type === "text")
@@ -166,7 +172,7 @@ export async function POST(req: NextRequest) {
 
   const slug = randomSlug();
 
-  // Save to audits
+  // Save to audits (table may not exist yet — treat insert error as non-fatal)
   const { data: audit, error: insertErr } = await supabase
     .from("audits")
     .insert({
@@ -181,7 +187,16 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (insertErr || !audit) {
-    return NextResponse.json({ error: insertErr?.message ?? "failed to save audit" }, { status: 500 });
+    // audits table may not exist yet — return the content anyway so it's not lost
+    return NextResponse.json({
+      id: null,
+      share_slug: slug,
+      share_url: null,
+      content_md: contentMd,
+      summary,
+      email_sent: false,
+      email_error: insertErr?.message ?? "audits table not found — audit not persisted",
+    });
   }
 
   // Log interaction if lead_id provided

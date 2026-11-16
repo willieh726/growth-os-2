@@ -128,12 +128,18 @@ export async function POST(req: NextRequest) {
 
   // Call Anthropic
   const anthropic = new Anthropic({ apiKey: anthropicKey });
-  const message = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 512,
-    system: EMAIL_SYSTEM,
-    messages: [{ role: "user", content: userPrompt }],
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 512,
+      system: EMAIL_SYSTEM,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+  } catch (aiErr) {
+    const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+    return NextResponse.json({ error: `AI error: ${msg}` }, { status: 500 });
+  }
 
   const rawText = message.content
     .filter((b) => b.type === "text")
@@ -147,7 +153,7 @@ export async function POST(req: NextRequest) {
   }
   const { subject, body: emailBody } = JSON.parse(jsonMatch[0]) as { subject: string; body: string };
 
-  // Save to outreach_messages
+  // Save to outreach_messages (table may not exist yet — treat as non-fatal)
   const { data: msg, error: insertErr } = await supabase
     .from("outreach_messages")
     .insert({
@@ -162,9 +168,6 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
-  if (insertErr || !msg) {
-    return NextResponse.json({ error: insertErr?.message ?? "failed to save draft" }, { status: 500 });
-  }
-
-  return NextResponse.json({ message_id: msg.id, subject, body: emailBody });
+  // Return the draft even if save failed (outreach_messages table may not exist)
+  return NextResponse.json({ message_id: msg?.id ?? null, subject, body: emailBody });
 }

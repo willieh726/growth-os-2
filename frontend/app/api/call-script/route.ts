@@ -141,12 +141,18 @@ export async function POST(req: NextRequest) {
 
   // Call Anthropic
   const anthropic = new Anthropic({ apiKey: anthropicKey });
-  const message = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 1024,
-    system: CALL_SYSTEM,
-    messages: [{ role: "user", content: factsBlock(biz, score) }],
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1024,
+      system: CALL_SYSTEM,
+      messages: [{ role: "user", content: factsBlock(biz, score) }],
+    });
+  } catch (aiErr) {
+    const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+    return NextResponse.json({ error: `AI error: ${msg}` }, { status: 500 });
+  }
 
   const rawText = message.content
     .filter((b) => b.type === "text")
@@ -159,8 +165,8 @@ export async function POST(req: NextRequest) {
   }
   const script = JSON.parse(jsonMatch[0]);
 
-  // Save to outreach_messages
-  const { data: msg, error: insertErr } = await supabase
+  // Save to outreach_messages (table may not exist yet — treat as non-fatal)
+  const { data: msg } = await supabase
     .from("outreach_messages")
     .insert({
       lead_id,
@@ -174,18 +180,16 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
-  if (insertErr || !msg) {
-    return NextResponse.json({ error: insertErr?.message ?? "failed to save script" }, { status: 500 });
+  // Log interaction if save succeeded
+  if (msg?.id) {
+    await supabase.from("interactions").insert({
+      lead_id,
+      type: "call_script_generated",
+      channel: "system",
+      subject: "Call script generated",
+      metadata: { message_id: msg.id },
+    });
   }
 
-  // Log interaction
-  await supabase.from("interactions").insert({
-    lead_id,
-    type: "call_script_generated",
-    channel: "system",
-    subject: "Call script generated",
-    metadata: { message_id: msg.id },
-  });
-
-  return NextResponse.json({ message_id: msg.id, ...script });
+  return NextResponse.json({ message_id: msg?.id ?? null, ...script });
 }
