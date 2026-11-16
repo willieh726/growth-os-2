@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
+import { Resend } from "resend";
 
 export const maxDuration = 60;
 
@@ -102,9 +103,11 @@ export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const frontendUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://signalsyncagency.com";
+  const resendKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.OUTREACH_FROM_EMAIL;
+  const fromName = process.env.OUTREACH_FROM_NAME ?? "Signal Sync";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const frontendUrl = appUrl ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://signalsyncagency.com");
 
   if (!supabaseUrl || !serviceKey || !anthropicKey) {
     return NextResponse.json({ error: "Missing required env vars" }, { status: 500 });
@@ -194,10 +197,120 @@ export async function POST(req: NextRequest) {
 
   const shareUrl = `${frontendUrl}/a/${audit.share_slug}`;
 
+  // Send audit delivery email if we have Resend configured and a recipient
+  let emailSent = false;
+  let emailError: string | null = null;
+
+  if (resendKey && fromEmail) {
+    // Determine recipient: check lead's contact_email, then business email
+    let toEmail: string | null = null;
+    let contactName = (biz as Record<string, unknown>).name as string ?? "";
+
+    if (lead_id) {
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("contact_email, contact_name")
+        .eq("id", lead_id)
+        .maybeSingle();
+      toEmail = (lead as { contact_email?: string } | null)?.contact_email ?? null;
+      contactName = (lead as { contact_name?: string } | null)?.contact_name ?? contactName;
+    }
+
+    if (!toEmail) {
+      toEmail = (biz as { email?: string }).email ?? null;
+    }
+
+    if (toEmail) {
+      const bizName = (biz as { name?: string }).name ?? "there";
+      const city = (biz as { city?: string }).city ?? "";
+      const state = (biz as { state?: string }).state ?? "";
+      const websiteUrl = (biz as { website_url?: string }).website_url ?? "";
+
+      // Build Calendly booking URL with prefilled context
+      const bookParams = new URLSearchParams();
+      if (contactName) bookParams.set("name", contactName);
+      if (toEmail) bookParams.set("email", toEmail);
+      const notesParts = [`Business: ${bizName}`];
+      if (city || state) notesParts.push(`City: ${city}, ${state}`.replace(/, $/, ""));
+      if (websiteUrl) notesParts.push(`Website: ${websiteUrl}`);
+      notesParts.push("Booked from: audit link");
+      bookParams.set("a1", notesParts.join("\n"));
+      const bookUrl = `https://calendly.com/williamhoge1/30min?${bookParams.toString()}`;
+
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#030712;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+    <!-- Logo -->
+    <div style="margin-bottom:28px;display:flex;align-items:center;gap:10px">
+      <svg width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="44" r="6" fill="#34D399"/>
+        <path d="M20 32 A12 12 0 0 1 32 44" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M20 23 A21 21 0 0 1 41 44" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M20 14 A30 30 0 0 1 50 44" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/>
+      </svg>
+      <span style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:-0.3px">${fromName}</span>
+    </div>
+    <!-- Headline -->
+    <h1 style="font-size:24px;font-weight:800;color:#ffffff;margin:0 0 12px;line-height:1.3">
+      Your free visibility audit is ready, ${bizName}.
+    </h1>
+    <p style="color:#9ca3af;font-size:15px;line-height:1.6;margin:0 0 28px">
+      We ran a full scan of your online presence — your website, local search visibility, and what customers see when they look you up. Here&rsquo;s what we found:
+    </p>
+    <!-- CTA button -->
+    <a href="${shareUrl}"
+       style="display:inline-block;background:#10b981;color:#030712;font-weight:800;font-size:16px;padding:14px 32px;border-radius:12px;text-decoration:none;letter-spacing:-0.2px">
+      View Your Audit &rarr;
+    </a>
+    <!-- Footer note -->
+    <p style="color:#6b7280;font-size:13px;margin-top:28px;line-height:1.6">
+      Questions? Just reply to this email &mdash; same team.<br>
+      <a href="${bookUrl}" style="color:#34D399;text-decoration:none">Book a free 30-min call</a> if you want to walk through it together.
+    </p>
+    <hr style="border:none;border-top:1px solid #1f2937;margin:32px 0">
+    <p style="color:#374151;font-size:11px;margin:0">
+      ${fromName} &middot; <a href="https://signalsyncagency.com" style="color:#374151;text-decoration:none">signalsyncagency.com</a>
+    </p>
+  </div>
+</body>
+</html>`;
+
+      const resend = new Resend(resendKey);
+      const { error: sendErr } = await resend.emails.send({
+        from: `${fromName} <${fromEmail}>`,
+        to: toEmail,
+        subject: `Your free visibility audit — ${bizName}`,
+        html,
+        text: `Your free visibility audit is ready, ${bizName}.\n\nView it here: ${shareUrl}\n\nQuestions? Reply to this email or book a call: ${bookUrl}\n\n— ${fromName}`,
+      });
+
+      if (sendErr) {
+        emailError = sendErr.message;
+      } else {
+        emailSent = true;
+        // Log the email send as an interaction
+        if (lead_id) {
+          await supabase.from("interactions").insert({
+            lead_id,
+            type: "email_sent",
+            channel: "email",
+            subject: `Your free visibility audit — ${bizName}`,
+            occurred_at: new Date().toISOString(),
+            metadata: { audit_id: audit.id, to: toEmail, type: "audit_delivery" },
+          });
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     audit_id: audit.id,
     share_slug: audit.share_slug,
     share_url: shareUrl,
     content_md: contentMd,
+    email_sent: emailSent,
+    ...(emailError ? { email_error: emailError } : {}),
   });
 }
