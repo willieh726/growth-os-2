@@ -394,7 +394,7 @@ export async function POST(req: NextRequest) {
     .limit(limit);
 
   if (scoredIds.length > 0) {
-    query = query.not("id", "in", `(${scoredIds.join(",")})`);
+    query = query.not("id", "in", `(${scoredIds.map(id => `"${id}"`).join(",")})`);
   }
 
   const { data: businesses, error: fetchErr } = await query;
