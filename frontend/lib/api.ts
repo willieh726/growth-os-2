@@ -1,36 +1,3 @@
-import { supabase } from "@/lib/supabase";
-
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    // ngrok free tier shows an interstitial warning page for browser requests;
-    // this header bypasses it so fetch() gets the actual API response.
-    "ngrok-skip-browser-warning": "1",
-  };
-  if (supabase) {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: { ...headers, ...(init?.headers || {}) },
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-export const api = {
-  get: <T>(p: string) => req<T>(p),
-  post: <T>(p: string, body?: unknown) =>
-    req<T>(p, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
-  patch: <T>(p: string, body?: unknown) =>
-    req<T>(p, { method: "PATCH", body: JSON.stringify(body) }),
-};
-
 export type Lead = {
   id: string; business_id: string; stage: string; name: string;
   industry: string; city: string | null; state: string; phone: string | null;
