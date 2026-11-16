@@ -76,7 +76,8 @@ export default function LeadDetail() {
   useEffect(load, [load]);
 
   if (!lead) return <p className="text-gray-400">Loading…</p>;
-  const bd = lead.score_breakdown || {};
+  type BDEntry = { points: number; max: number; reason: string };
+  const bd = (lead.score_breakdown || {}) as Record<string, BDEntry>;
 
   const run = async (name: string, fn: () => Promise<unknown>) => {
     setBusy(name);
