@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
   let message;
   try {
     message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-5-sonnet-20240620",
       max_tokens: 1800,
       system: AUDIT_SYSTEM,
       messages: [{ role: "user", content: factsBlock(biz as Record<string, unknown>, scoreRow as Record<string, unknown>) }],
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
       content_md: contentMd,
       summary,
       share_slug: slug,
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-5-sonnet-20240620",
     })
     .select("id, share_slug")
     .single();
