@@ -1,6 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { api, Business, INDUSTRIES, label, scoreColor } from "@/lib/api";
+import { createClient } from "@supabase/supabase-js";
+import { Business, INDUSTRIES, label, scoreColor } from "@/lib/api";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function Businesses() {
   const [items, setItems] = useState<Business[]>([]);
@@ -20,19 +26,97 @@ export default function Businesses() {
   const [page, setPage] = useState(0);
 
   const load = useCallback(() => {
-    const p = new URLSearchParams();
-    if (industry) p.set("industry", industry);
-    if (minScore) p.set("min_score", String(minScore));
-    if (noSite) p.set("has_website", "false");
-    if (q) p.set("q", q);
-    p.set("limit", String(PAGE_SIZE));
-    p.set("offset", String(page * PAGE_SIZE));
     setLoading(true);
     setErr("");
-    api.get<{ total: number; items: Business[] }>(`/businesses?${p}`)
-      .then(r => { setItems(r.items); setTotal(r.total); })
-      .catch(e => setErr(String(e)))
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        // Build base query with joins to opportunity_scores
+        let countQ = supabase
+          .from("businesses")
+          .select("id", { count: "exact", head: true });
+
+        let dataQ = supabase
+          .from("businesses")
+          .select(`
+            id, name, industry, city, state, phone, email,
+            website_url, has_website, website_discovered,
+            gbp_rating, gbp_review_count, business_status,
+            likely_fake_listing,
+            opportunity_scores ( total )
+          `)
+          .order("id", { ascending: true })
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+        // Apply filters
+        if (industry) {
+          countQ = countQ.eq("industry", industry);
+          dataQ = dataQ.eq("industry", industry);
+        }
+        if (noSite) {
+          countQ = countQ.eq("has_website", false);
+          dataQ = dataQ.eq("has_website", false);
+        }
+        if (q) {
+          countQ = countQ.ilike("name", `%${q}%`);
+          dataQ = dataQ.ilike("name", `%${q}%`);
+        }
+
+        const [{ count }, { data, error }] = await Promise.all([
+          countQ,
+          dataQ,
+        ]);
+
+        if (error) throw new Error(error.message);
+
+        // Map rows to Business shape; filter by minScore client-side
+        // (opportunity_scores is a 1:1 join so it comes back as an array or object)
+        type RawRow = {
+          id: string; name: string; industry: string; city: string | null;
+          state: string; phone: string | null; email: string | null;
+          website_url: string | null; has_website: boolean; website_discovered: boolean | null;
+          gbp_rating: number | null; gbp_review_count: number | null;
+          business_status: string | null; likely_fake_listing: boolean | null;
+          opportunity_scores: { total: number } | { total: number }[] | null;
+        };
+
+        let mapped: Business[] = (data ?? []).map((r: RawRow) => {
+          const scoreObj = Array.isArray(r.opportunity_scores)
+            ? r.opportunity_scores[0] ?? null
+            : r.opportunity_scores;
+          return {
+            id: r.id,
+            name: r.name,
+            industry: r.industry,
+            city: r.city,
+            state: r.state,
+            phone: r.phone,
+            contact_email: null,
+            business_email: r.email,
+            website_url: r.website_url,
+            has_website: r.has_website,
+            gbp_rating: r.gbp_rating,
+            gbp_review_count: r.gbp_review_count,
+            opportunity_score: scoreObj?.total ?? null,
+            score_breakdown: null,
+            interaction_count: 0,
+            last_activity_at: null,
+            likely_fake_listing: r.likely_fake_listing ?? undefined,
+            business_status: r.business_status ?? undefined,
+          } as Business;
+        });
+
+        if (minScore > 0) {
+          mapped = mapped.filter(b => (b.opportunity_score ?? 0) >= minScore);
+        }
+
+        setItems(mapped);
+        setTotal(count ?? 0);
+      } catch (e) {
+        setErr(String(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [industry, minScore, noSite, q, page]);
 
   useEffect(load, [load]);
@@ -43,8 +127,20 @@ export default function Businesses() {
 
   const promote = async (id: string) => {
     setBusy(id);
-    try { await api.post("/leads", { business_id: id }); alert("Promoted to pipeline"); load(); }
-    catch (e) { alert(String(e)); }
+    try {
+      const r = await fetch("/api/promote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ business_id: id }),
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        if (r.status === 409) { alert("Already in pipeline"); return; }
+        throw new Error((body as { error?: string }).error ?? r.statusText);
+      }
+      alert("Promoted to pipeline");
+      load();
+    } catch (e) { alert(String(e)); }
     finally { setBusy(null); }
   };
 
@@ -55,12 +151,16 @@ export default function Businesses() {
   const promoteNext = async () => {
     setBusy("batch");
     try {
-      const r = await api.post<{ promoted: number }>(
-        "/leads/promote-batch?min_score=60&limit=10",
-      );
+      const r = await fetch("/api/promote-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ min_score: 60, limit: 10 }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const { promoted } = await r.json() as { promoted: number };
       alert(
-        r.promoted
-          ? `Added ${r.promoted} lead${r.promoted === 1 ? "" : "s"} to your pipeline.`
+        promoted
+          ? `Added ${promoted} lead${promoted === 1 ? "" : "s"} to your pipeline.`
           : "No new businesses scoring 60+ left to promote.",
       );
       load();
@@ -105,7 +205,7 @@ export default function Businesses() {
           <p className="font-bold text-red-800">Couldn&apos;t load businesses</p>
           <p className="mt-1 text-sm text-red-700">
             This is a connection or server problem — <strong>your data is not lost.</strong>{" "}
-            Try again in a moment; if it persists, check the backend is running.
+            Try again in a moment.
           </p>
           <p className="mt-2 font-mono text-xs text-red-600">{err}</p>
           <button onClick={load}

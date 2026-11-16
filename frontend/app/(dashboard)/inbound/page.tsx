@@ -1,6 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type InboundLead = {
   id: string;
@@ -43,11 +48,20 @@ export default function InboundLeads() {
   const load = useCallback(() => {
     setLoading(true);
     setErr("");
-    api
-      .get<InboundLead[]>("/audits/inbound")
-      .then(setLeads)
-      .catch((e) => setErr(String(e)))
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("inbound_leads")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw new Error(error.message);
+        setLeads((data ?? []) as InboundLead[]);
+      } catch (e) {
+        setErr(String(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   useEffect(load, [load]);
@@ -55,7 +69,11 @@ export default function InboundLeads() {
   const updateStatus = async (id: string, status: string) => {
     setUpdating(id);
     try {
-      await api.patch(`/audits/inbound/${id}`, { status });
+      const { error } = await supabase
+        .from("inbound_leads")
+        .update({ status })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
       setLeads((prev) =>
         prev.map((l) => (l.id === id ? { ...l, status } : l))
       );
