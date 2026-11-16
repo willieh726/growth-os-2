@@ -405,10 +405,9 @@ export async function POST(req: NextRequest) {
 
   const scoredSet = new Set((alreadyScored ?? []).map((r: { business_id: string }) => r.business_id));
   const businesses = allBiz.filter((b: BusinessRow) => !scoredSet.has(b.id)).slice(0, limit);
-  const fetchErr = null;
 
-  if (fetchErr || !businesses) {
-    return NextResponse.json({ error: fetchErr?.message ?? "fetch failed" }, { status: 500 });
+  if (!businesses.length) {
+    return NextResponse.json({ scored: 0, message: "No unscored businesses found" });
   }
 
   return scoreAndReturn(supabase, businesses as BusinessRow[]);
