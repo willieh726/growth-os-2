@@ -1,11 +1,5 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type InboundLead = {
   id: string;
@@ -50,12 +44,9 @@ export default function InboundLeads() {
     setErr("");
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("inbound_leads")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (error) throw new Error(error.message);
-        setLeads((data ?? []) as InboundLead[]);
+        const r = await fetch("/api/inbound");
+        if (!r.ok) throw new Error(await r.text());
+        setLeads((await r.json()) as InboundLead[]);
       } catch (e) {
         setErr(String(e));
       } finally {
@@ -69,11 +60,12 @@ export default function InboundLeads() {
   const updateStatus = async (id: string, status: string) => {
     setUpdating(id);
     try {
-      const { error } = await supabase
-        .from("inbound_leads")
-        .update({ status })
-        .eq("id", id);
-      if (error) throw new Error(error.message);
+      const r = await fetch(`/api/inbound/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!r.ok) throw new Error(await r.text());
       setLeads((prev) =>
         prev.map((l) => (l.id === id ? { ...l, status } : l))
       );
