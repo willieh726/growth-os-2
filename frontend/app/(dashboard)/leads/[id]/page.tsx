@@ -1,13 +1,7 @@
 "use client";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { Lead, STAGES, label, scoreColor } from "@/lib/api";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type Draft = { message_id: string; subject: string; body: string };
 type Audit = { audit_id: string; share_url: string; content_md: string };
@@ -27,50 +21,13 @@ export default function LeadDetail() {
 
   const load = useCallback(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("leads")
-        .select(`
-          id, stage, business_id,
-          businesses (
-            name, industry, city, state, phone, email,
-            website_url, has_website, gbp_rating, gbp_review_count,
-            likely_fake_listing
-          ),
-          opportunity_scores ( total, breakdown ),
-          interactions ( id, type, subject, occurred_at )
-        `)
-        .eq("id", id)
-        .single();
-      if (error || !data) return;
-      const b = (data.businesses as Record<string, unknown>) ?? {};
-      const s = Array.isArray(data.opportunity_scores)
-        ? ((data.opportunity_scores[0] as Record<string, unknown>) ?? {})
-        : ((data.opportunity_scores as Record<string, unknown>) ?? {});
-      const interactions = Array.isArray(data.interactions)
-        ? (data.interactions as Array<{ id: string; type: string; subject: string | null; occurred_at: string }>)
-        : [];
-      setLead({
-        id: data.id as string,
-        business_id: data.business_id as string,
-        stage: data.stage as string,
-        name: b.name as string,
-        industry: b.industry as string,
-        city: b.city as string | null,
-        state: b.state as string,
-        phone: b.phone as string | null,
-        contact_email: null,
-        business_email: b.email as string | null,
-        website_url: b.website_url as string | null,
-        has_website: b.has_website as boolean,
-        gbp_rating: b.gbp_rating as number | null,
-        gbp_review_count: b.gbp_review_count as number | null,
-        opportunity_score: (s.total as number | null) ?? null,
-        score_breakdown: (s.breakdown as Lead["score_breakdown"]) ?? null,
-        interaction_count: interactions.length,
-        last_activity_at: interactions[0]?.occurred_at ?? null,
-        likely_fake_listing: b.likely_fake_listing as boolean | undefined,
-        interactions,
-      });
+      try {
+        const r = await fetch(`/api/leads/${id}`);
+        if (!r.ok) return;
+        setLead(await r.json() as Lead);
+      } catch {
+        // silent — lead detail will stay null and show loading state
+      }
     })();
   }, [id]);
   useEffect(load, [load]);
@@ -236,11 +193,12 @@ export default function LeadDetail() {
             onChange={e => {
               const newStage = e.target.value;
               run("stage", async () => {
-                const { error } = await supabase
-                  .from("leads")
-                  .update({ stage: newStage })
-                  .eq("id", lead.id);
-                if (error) throw new Error(error.message);
+                const r = await fetch(`/api/leads/${lead.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ stage: newStage }),
+                });
+                if (!r.ok) throw new Error(await r.text());
               });
             }}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -254,13 +212,12 @@ export default function LeadDetail() {
             <input value={note} onChange={e => setNote(e.target.value)} placeholder="Add note…"
               className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             <button onClick={() => run("note", async () => {
-              const { error } = await supabase.from("interactions").insert({
-                lead_id: lead.id,
-                type: "note",
-                subject: note,
-                occurred_at: new Date().toISOString(),
+              const r = await fetch(`/api/leads/${lead.id}/interactions`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "note", subject: note, occurred_at: new Date().toISOString() }),
               });
-              if (error) throw new Error(error.message);
+              if (!r.ok) throw new Error(await r.text());
               setNote("");
             })}
               className="rounded-lg border border-gray-300 px-3 text-sm hover:bg-gray-100">+</button>

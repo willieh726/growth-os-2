@@ -1,12 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { INDUSTRIES, label } from "@/lib/api";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type Run = {
   id: string; source: string; industry: string | null; state: string | null;
@@ -35,12 +29,13 @@ export default function Runs() {
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase
-      .from("ingestion_runs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (data) setRuns(data as Run[]);
+    try {
+      const r = await fetch("/api/runs");
+      if (!r.ok) throw new Error(await r.text());
+      setRuns(await r.json() as Run[]);
+    } catch (e) {
+      console.error("Failed to load runs:", e);
+    }
   };
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, []);
 
