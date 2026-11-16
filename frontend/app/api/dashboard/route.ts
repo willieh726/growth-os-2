@@ -23,16 +23,7 @@ export async function GET() {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const [
-    { count: totalBusinesses },
-    { count: noWebsite },
-    { data: scores },
-    { data: leads },
-    { count: emailSent },
-    { count: emailReplied },
-    seqActiveResult,
-    seqStoppedResult,
-    { data: bizRows },
-    { data: scoreRows },
+    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9
   ] = await Promise.all([
     supabase.from("businesses").select("*", { count: "exact", head: true }),
     supabase.from("businesses").select("*", { count: "exact", head: true }).eq("has_website", false),
@@ -46,9 +37,16 @@ export async function GET() {
     supabase.from("opportunity_scores").select("business_id, total"),
   ]);
 
-  // sequence_enrollments table may not exist yet — treat errors as 0
-  const sequencesActive = seqActiveResult.error ? 0 : (seqActiveResult.count ?? 0);
-  const sequencesStopped = seqStoppedResult.error ? 0 : (seqStoppedResult.count ?? 0);
+  const totalBusinesses = r0.count ?? 0;
+  const noWebsite = r1.count ?? 0;
+  const scores = r2.data;
+  const leads = r3.data;
+  const emailSent = r4.count ?? 0;
+  const emailReplied = r5.count ?? 0;
+  const sequencesActive = r6.error ? 0 : (r6.count ?? 0);
+  const sequencesStopped = r7.error ? 0 : (r7.count ?? 0);
+  const bizRows = r8.data;
+  const scoreRows = r9.data;
 
   const allScores = (scores ?? []).map((r: { total: number }) => r.total);
   const hot = allScores.filter((t) => t >= 60).length;
