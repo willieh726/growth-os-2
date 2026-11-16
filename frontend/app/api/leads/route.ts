@@ -28,15 +28,7 @@ export async function GET(req: NextRequest) {
 
   let q = supabase
     .from("leads")
-    .select(`
-      id, stage, business_id, created_at,
-      businesses (
-        name, industry, city, state, phone, email,
-        website_url, has_website, gbp_rating, gbp_review_count
-      ),
-      opportunity_scores ( total, breakdown ),
-      interactions ( id )
-    `)
+    .select("id, stage, business_id, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -47,48 +39,75 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Also fetch likely_fake_listing from businesses_scored view
-  const businessIds = (data ?? []).map((r: Record<string, unknown>) => r.business_id as string);
-  let fakeMap: Record<string, boolean> = {};
-  if (businessIds.length > 0) {
-    const { data: scored } = await supabase
-      .from("businesses_scored")
-      .select("id, likely_fake_listing")
-      .in("id", businessIds);
-    if (scored) {
-      for (const row of scored as { id: string; likely_fake_listing: boolean }[]) {
-        fakeMap[row.id] = row.likely_fake_listing;
-      }
-    }
+  const rows = data ?? [];
+  const businessIds = rows.map((r: { business_id: string }) => r.business_id);
+  const leadIds = rows.map((r: { id: string }) => r.id);
+
+  // Fetch related data in parallel via explicit queries (no FK joins needed)
+  const [
+    { data: bizRows },
+    { data: scoreRows },
+    { data: scoredRows },
+    { data: interactionRows },
+  ] = await Promise.all([
+    businessIds.length > 0
+      ? supabase.from("businesses").select("id, name, industry, city, state, phone, email, website_url, has_website, gbp_rating, gbp_review_count").in("id", businessIds)
+      : { data: [] },
+    businessIds.length > 0
+      ? supabase.from("opportunity_scores").select("business_id, total, breakdown").in("business_id", businessIds)
+      : { data: [] },
+    businessIds.length > 0
+      ? supabase.from("businesses_scored").select("id, likely_fake_listing").in("id", businessIds)
+      : { data: [] },
+    leadIds.length > 0
+      ? supabase.from("interactions").select("lead_id").in("lead_id", leadIds)
+      : { data: [] },
+  ]);
+
+  // Build lookup maps
+  type BizRow = { id: string; name: string; industry: string; city: string | null; state: string; phone: string | null; email: string | null; website_url: string | null; has_website: boolean; gbp_rating: number | null; gbp_review_count: number | null };
+  type ScoreRow = { business_id: string; total: number; breakdown: Record<string, unknown> };
+  type ScoredRow = { id: string; likely_fake_listing: boolean };
+  type InteractionRow = { lead_id: string };
+
+  const bizMap: Record<string, BizRow> = {};
+  for (const b of (bizRows ?? []) as BizRow[]) bizMap[b.id] = b;
+
+  const scoreMap: Record<string, ScoreRow> = {};
+  for (const s of (scoreRows ?? []) as ScoreRow[]) scoreMap[s.business_id] = s;
+
+  const fakeMap: Record<string, boolean> = {};
+  for (const s of (scoredRows ?? []) as ScoredRow[]) fakeMap[s.id] = s.likely_fake_listing;
+
+  const interactionCount: Record<string, number> = {};
+  for (const i of (interactionRows ?? []) as InteractionRow[]) {
+    interactionCount[i.lead_id] = (interactionCount[i.lead_id] ?? 0) + 1;
   }
 
   // Flatten into Lead shape
-  const leads = (data ?? []).map((r: Record<string, unknown>) => {
-    const b = (r.businesses as Record<string, unknown>) ?? {};
-    const s = Array.isArray(r.opportunity_scores)
-      ? ((r.opportunity_scores[0] as Record<string, unknown>) ?? {})
-      : ((r.opportunity_scores as Record<string, unknown>) ?? {});
-    const interactions = Array.isArray(r.interactions) ? r.interactions : [];
+  const leads = rows.map((r: { id: string; business_id: string; stage: string; created_at: string }) => {
+    const b = bizMap[r.business_id] ?? {} as BizRow;
+    const s = scoreMap[r.business_id] ?? null;
     return {
       id: r.id,
       business_id: r.business_id,
       stage: r.stage,
-      name: b.name,
-      industry: b.industry,
-      city: b.city,
-      state: b.state,
-      phone: b.phone,
+      name: b.name ?? null,
+      industry: b.industry ?? null,
+      city: b.city ?? null,
+      state: b.state ?? null,
+      phone: b.phone ?? null,
       contact_email: null,
-      business_email: b.email,
-      website_url: b.website_url,
-      has_website: b.has_website,
-      gbp_rating: b.gbp_rating,
-      gbp_review_count: b.gbp_review_count,
-      opportunity_score: (s.total as number | null) ?? null,
-      score_breakdown: (s.breakdown as Record<string, unknown>) ?? null,
-      interaction_count: interactions.length,
+      business_email: b.email ?? null,
+      website_url: b.website_url ?? null,
+      has_website: b.has_website ?? false,
+      gbp_rating: b.gbp_rating ?? null,
+      gbp_review_count: b.gbp_review_count ?? null,
+      opportunity_score: s?.total ?? null,
+      score_breakdown: s?.breakdown ?? null,
+      interaction_count: interactionCount[r.id] ?? 0,
       last_activity_at: null,
-      likely_fake_listing: fakeMap[r.business_id as string] ?? false,
+      likely_fake_listing: fakeMap[r.business_id] ?? false,
     };
   });
 

@@ -29,58 +29,54 @@ export async function GET(
 
   const { id } = params;
 
-  const { data, error } = await supabase
+  const { data: leadRow, error } = await supabase
     .from("leads")
-    .select(`
-      id, stage, business_id,
-      businesses (
-        name, industry, city, state, phone, email,
-        website_url, has_website, gbp_rating, gbp_review_count
-      ),
-      opportunity_scores ( total, breakdown ),
-      interactions ( id, type, subject, occurred_at )
-    `)
+    .select("id, stage, business_id")
     .eq("id", id)
     .single();
 
-  if (error || !data) {
+  if (error || !leadRow) {
     return NextResponse.json({ error: error?.message ?? "Not found" }, { status: error ? 500 : 404 });
   }
 
-  // Get likely_fake_listing from the businesses_scored view
-  const b = (data.businesses as Record<string, unknown>) ?? {};
-  let likelyFakeListing = false;
-  const { data: scored } = await supabase
-    .from("businesses_scored")
-    .select("likely_fake_listing")
-    .eq("id", data.business_id as string)
-    .single();
-  if (scored) likelyFakeListing = (scored as { likely_fake_listing: boolean }).likely_fake_listing;
+  const bizId = leadRow.business_id as string;
 
-  const s = Array.isArray(data.opportunity_scores)
-    ? ((data.opportunity_scores[0] as Record<string, unknown>) ?? {})
-    : ((data.opportunity_scores as Record<string, unknown>) ?? {});
-  const interactions = Array.isArray(data.interactions)
-    ? (data.interactions as Array<{ id: string; type: string; subject: string | null; occurred_at: string }>)
-    : [];
+  // Fetch related data in parallel (no FK joins — not in schema cache)
+  const [
+    { data: bizRow },
+    { data: scoreRow },
+    { data: scoredRow },
+    { data: interactionRows },
+  ] = await Promise.all([
+    supabase.from("businesses").select("name, industry, city, state, phone, email, website_url, has_website, gbp_rating, gbp_review_count").eq("id", bizId).single(),
+    supabase.from("opportunity_scores").select("total, breakdown").eq("business_id", bizId).maybeSingle(),
+    supabase.from("businesses_scored").select("likely_fake_listing").eq("id", bizId).single(),
+    supabase.from("interactions").select("id, type, subject, occurred_at").eq("lead_id", id).order("occurred_at", { ascending: false }),
+  ]);
+
+  type BizRow = { name: string; industry: string; city: string | null; state: string; phone: string | null; email: string | null; website_url: string | null; has_website: boolean; gbp_rating: number | null; gbp_review_count: number | null };
+  const b = (bizRow as BizRow | null) ?? {} as BizRow;
+  const s = scoreRow as { total: number; breakdown: Record<string, unknown> } | null;
+  const likelyFakeListing = (scoredRow as { likely_fake_listing: boolean } | null)?.likely_fake_listing ?? false;
+  const interactions = (interactionRows ?? []) as Array<{ id: string; type: string; subject: string | null; occurred_at: string }>;
 
   const lead = {
-    id: data.id,
-    business_id: data.business_id,
-    stage: data.stage,
-    name: b.name,
-    industry: b.industry,
-    city: b.city,
-    state: b.state,
-    phone: b.phone,
+    id: leadRow.id,
+    business_id: leadRow.business_id,
+    stage: leadRow.stage,
+    name: b.name ?? null,
+    industry: b.industry ?? null,
+    city: b.city ?? null,
+    state: b.state ?? null,
+    phone: b.phone ?? null,
     contact_email: null,
-    business_email: b.email,
-    website_url: b.website_url,
-    has_website: b.has_website,
-    gbp_rating: b.gbp_rating,
-    gbp_review_count: b.gbp_review_count,
-    opportunity_score: (s.total as number | null) ?? null,
-    score_breakdown: (s.breakdown as Record<string, unknown>) ?? null,
+    business_email: b.email ?? null,
+    website_url: b.website_url ?? null,
+    has_website: b.has_website ?? false,
+    gbp_rating: b.gbp_rating ?? null,
+    gbp_review_count: b.gbp_review_count ?? null,
+    opportunity_score: s?.total ?? null,
+    score_breakdown: s?.breakdown ?? null,
     interaction_count: interactions.length,
     last_activity_at: interactions[0]?.occurred_at ?? null,
     likely_fake_listing: likelyFakeListing,

@@ -42,8 +42,8 @@ export async function GET() {
     supabase.from("interactions").select("*", { count: "exact", head: true }).eq("type", "reply").gte("occurred_at", since),
     supabase.from("sequence_enrollments").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("sequence_enrollments").select("*", { count: "exact", head: true }).eq("stop_reason", "reply"),
-    supabase.from("businesses").select("industry"),
-    supabase.from("opportunity_scores").select("total, businesses(industry)"),
+    supabase.from("businesses").select("id, industry"),
+    supabase.from("opportunity_scores").select("business_id, total"),
   ]);
 
   const allScores = (scores ?? []).map((r: { total: number }) => r.total);
@@ -59,15 +59,18 @@ export async function GET() {
   }
 
   const industryMap: Record<string, number> = {};
+  const bizIndustry: Record<string, string> = {};
   for (const b of bizRows ?? []) {
-    const ind = (b as { industry: string }).industry ?? "unknown";
+    const row = b as { id: string; industry: string };
+    const ind = row.industry ?? "unknown";
     industryMap[ind] = (industryMap[ind] ?? 0) + 1;
+    bizIndustry[row.id] = ind;
   }
 
   const indScores: Record<string, number[]> = {};
   for (const r of scoreRows ?? []) {
-    const row = r as { total: number; businesses: { industry: string } | null };
-    const ind = row.businesses?.industry ?? "unknown";
+    const row = r as { business_id: string; total: number };
+    const ind = bizIndustry[row.business_id] ?? "unknown";
     if (!indScores[ind]) indScores[ind] = [];
     indScores[ind].push(row.total);
   }
