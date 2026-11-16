@@ -38,7 +38,7 @@ export default function LeadDetail() {
 
   const run = async (name: string, fn: () => Promise<unknown>) => {
     setBusy(name);
-    try { await fn(); load(); } catch (e) { alert(String(e)); } finally { setBusy(""); }
+    try { await fn(); load(); } catch (e) { alert(e instanceof Error ? e.message : String(e)); } finally { setBusy(""); }
   };
 
   return (

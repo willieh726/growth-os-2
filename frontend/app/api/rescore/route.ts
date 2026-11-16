@@ -381,23 +381,31 @@ export async function POST(req: NextRequest) {
     return scoreAndReturn(supabase, businesses as BusinessRow[]);
   }
 
-  // Otherwise fetch unscored businesses
-  const { data: scored } = await supabase
-    .from("opportunity_scores")
-    .select("business_id");
-
-  const scoredIds = (scored ?? []).map((r: { business_id: string }) => r.business_id);
-
-  let query = supabase
+  // Fetch unscored businesses via left-join filter: businesses that have no score row
+  // Using a subquery via RPC-style approach: select businesses whose IDs don't appear
+  // in opportunity_scores. We achieve this by selecting from businesses with a
+  // limit and then filtering out already-scored ones in a second pass.
+  // Approach: fetch a larger batch (limit*3) then subtract scored ones via a targeted lookup.
+  const fetchLimit = Math.min(limit * 3, 150);
+  const { data: allBiz, error: bizFetchErr } = await supabase
     .from("businesses")
     .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
-    .limit(limit);
+    .limit(fetchLimit);
 
-  if (scoredIds.length > 0) {
-    query = query.not("id", "in", `(${scoredIds.map(id => `"${id}"`).join(",")})`);
+  if (bizFetchErr || !allBiz) {
+    return NextResponse.json({ error: bizFetchErr?.message ?? "fetch failed" }, { status: 500 });
   }
 
-  const { data: businesses, error: fetchErr } = await query;
+  // Check which of these have scores already (small batch — safe for NOT IN)
+  const candidateIds = allBiz.map((b: BusinessRow) => b.id);
+  const { data: alreadyScored } = await supabase
+    .from("opportunity_scores")
+    .select("business_id")
+    .in("business_id", candidateIds);
+
+  const scoredSet = new Set((alreadyScored ?? []).map((r: { business_id: string }) => r.business_id));
+  const businesses = allBiz.filter((b: BusinessRow) => !scoredSet.has(b.id)).slice(0, limit);
+  const fetchErr = null;
 
   if (fetchErr || !businesses) {
     return NextResponse.json({ error: fetchErr?.message ?? "fetch failed" }, { status: 500 });
