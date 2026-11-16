@@ -406,8 +406,9 @@ export async function POST(req: NextRequest) {
   return scoreAndReturn(supabase, businesses as BusinessRow[]);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function scoreAndReturn(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any, any, any>>,
   businesses: BusinessRow[]
 ) {
   if (businesses.length === 0) {
