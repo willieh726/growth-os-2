@@ -27,7 +27,7 @@ RULES — every rule is mandatory, no exceptions:
 - Sell the result, not the service: "capture after-hours quote requests" not "build a contact form".
 - No invented stats, no competitor names, no made-up numbers.
 - No "I noticed" or "I came across your website" opener — it reads as spam.
-- Sign with the sender's first name only, no title, no company. The sender's name is provided in the user message.
+- Sign off as: "{sender first name} from Signal Sync" — e.g. "— Will from Signal Sync". The sender's first name is provided in the user message.
 - Subject line: specific, curiosity-gap, 6 words or fewer. No questions.
 - Tone: peer-to-peer, plain language, one contractor to another.
 - End with a soft CTA: one question or a 15-minute call offer.
@@ -86,7 +86,9 @@ export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  const fromName = process.env.OUTREACH_FROM_NAME ?? "Signal Sync";
+  const fromNameFull = process.env.OUTREACH_FROM_NAME ?? "Will";
+  // Extract first name — if the env var is a brand name like "Signal Sync", fall back to "Will"
+  const fromFirstName = fromNameFull.split(" ")[0].toLowerCase() === "signal" ? "Will" : fromNameFull.split(" ")[0];
 
   if (!supabaseUrl || !serviceKey || !anthropicKey) {
     return NextResponse.json({ error: "Missing required env vars" }, { status: 500 });
@@ -126,7 +128,7 @@ export async function POST(req: NextRequest) {
   const biz = (bizRow ?? {}) as Record<string, unknown>;
   const score = (scoreRow ?? {}) as Record<string, unknown>;
 
-  const userPrompt = `${factsBlock(biz, score)}\n\nIntent: ${intent ?? "initial cold outreach"}\n\nSender name: ${fromName.split(" ")[0]}`;
+  const userPrompt = `${factsBlock(biz, score)}\n\nIntent: ${intent ?? "initial cold outreach"}\n\nSender first name: ${fromFirstName}`;
 
   // Call Anthropic
   const anthropic = new Anthropic({ apiKey: anthropicKey });
