@@ -72,8 +72,6 @@ Location: ${biz.city ?? "unknown"}, ${biz.state}
 Phone: ${biz.phone ?? "not listed"}
 Email: ${biz.email ?? "not listed"}
 Website status: ${websiteStatus}
-Google reviews: ${biz.gbp_review_count ?? 0}
-Google rating: ${biz.gbp_rating ?? "none"}
 Opportunity score: ${score.total ?? 0}/100
 
 MEASURED PROBLEMS (sorted worst first):
