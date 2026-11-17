@@ -157,16 +157,15 @@ export async function POST(req: NextRequest) {
   }
   const { subject, body: emailBody } = JSON.parse(jsonMatch[0]) as { subject: string; body: string };
 
-  // Save to outreach_messages
+  // Save to outreach_messages (schema: kind, not channel; no model column)
   const { data: msg } = await supabase
     .from("outreach_messages")
     .insert({
       lead_id,
-      channel: "email",
+      kind: "cold_email",
       subject,
       body: emailBody,
       status: "draft",
-      model: FAST_MODEL,
     })
     .select("id")
     .single();

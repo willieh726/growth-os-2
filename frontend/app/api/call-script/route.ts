@@ -166,16 +166,15 @@ export async function POST(req: NextRequest) {
   }
   const script = JSON.parse(jsonMatch[0]);
 
-  // Save to outreach_messages
+  // Save to outreach_messages (schema: kind, not channel; no model column)
   const { data: msg } = await supabase
     .from("outreach_messages")
     .insert({
       lead_id,
-      channel: "call",
+      kind: "call_script",
       subject: "Call script",
       body: JSON.stringify(script),
       status: "draft",
-      model: FAST_MODEL,
     })
     .select("id")
     .single();
