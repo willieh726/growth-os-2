@@ -117,6 +117,49 @@ function isSocialOnly(url: string | null): boolean {
   return SOCIAL_HOSTS.some((h) => url.toLowerCase().includes(h));
 }
 
+// ── Lead quality filters ──────────────────────────────────────────────────────
+// Applied at ingest time to avoid burning scoring credits on junk leads.
+
+// GBP place types that indicate chains/non-contractors we don't want
+const EXCLUDED_TYPES = new Set([
+  "meal_delivery","meal_takeaway","restaurant","food","bar","night_club",
+  "lodging","hotel","motel","gas_station","convenience_store","grocery_or_supermarket",
+  "supermarket","department_store","shopping_mall","car_dealer","car_rental",
+  "car_wash","bank","atm","insurance_agency","real_estate_agency","travel_agency",
+  "gym","spa","beauty_salon","hair_care","pharmacy","hospital","doctor",
+  "dentist","veterinary_care","school","university","church","place_of_worship",
+  "accounting","lawyer","museum","library","movie_theater","bowling_alley",
+  "amusement_park","zoo","campground","rv_park","storage",
+]);
+
+// Known chain/franchise keywords — local contractors won't have these names
+const CHAIN_KEYWORDS = [
+  "home depot","lowe's","lowes","ace hardware","true value","menards",
+  "servicemaster","servpro","stanley steemer","roto-rooter","rotorooter",
+  "mr. rooter","mr rooter","one hour","comfort systems","lennox","carrier",
+  "trane","american home shield","first american","2-10 home","angi","homeadvisor",
+  "thumbtack","handyman connection","mr. handyman","mr handyman","neighborly",
+  "five star","1-800","1800","nationwide","national","corporate","holdings llc",
+];
+
+function isChainOrExcluded(rb: RawBusiness): boolean {
+  // Check GBP types
+  if (rb.gbp_types?.some((t) => EXCLUDED_TYPES.has(t))) return true;
+  // Check name for chain keywords
+  const lower = rb.normalized_name;
+  return CHAIN_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+function isContactable(rb: RawBusiness): boolean {
+  // Must have at least a phone number to be worth scoring/outreaching
+  return !!rb.phone_normalized;
+}
+
+function isGhostListing(rb: RawBusiness): boolean {
+  // 0 reviews AND no website = likely an unclaimed/fake listing, not worth it
+  return (rb.gbp_review_count ?? 0) === 0 && !rb.has_website;
+}
+
 // ── Google Places fetch ───────────────────────────────────────────────────────
 interface RawBusiness {
   google_place_id: string | null;
@@ -353,7 +396,7 @@ export async function POST(req: NextRequest) {
   }
   const runId = runRow.id as string;
 
-  const stats = { fetched: 0, inserted: 0, merged: 0, scored: 0, errors: 0, quota_hit: false };
+  const stats = { fetched: 0, filtered: 0, inserted: 0, merged: 0, scored: 0, errors: 0, quota_hit: false };
   const newIds: string[] = [];
 
   const baseQ = INDUSTRY_QUERIES[industry] ?? industry.replace(/_/g, " ");
@@ -381,6 +424,12 @@ export async function POST(req: NextRequest) {
           if (rb.google_place_id && seenPlaceIds.has(rb.google_place_id)) continue;
           if (rb.google_place_id) seenPlaceIds.add(rb.google_place_id);
           if (rb.business_status && rb.business_status !== "OPERATIONAL") continue;
+
+          // Quality gates — drop junk before it ever hits the DB or scoring
+          if (!isContactable(rb) || isChainOrExcluded(rb) || isGhostListing(rb)) {
+            stats.filtered++;
+            continue;
+          }
 
           stats.fetched++;
           try {
