@@ -170,5 +170,16 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
+  // Log interaction if save succeeded
+  if (msg?.id) {
+    await supabase.from("interactions").insert({
+      lead_id,
+      type: "email_draft_created",
+      channel: "system",
+      subject: "Email draft created",
+      metadata: { message_id: msg.id, intent: intent ?? "initial cold outreach" },
+    });
+  }
+
   return NextResponse.json({ message_id: msg?.id ?? null, subject, body: emailBody });
 }

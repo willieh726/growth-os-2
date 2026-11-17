@@ -26,6 +26,7 @@ export default function Runs() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [industry, setIndustry] = useState("roofing");
   const [state, setState] = useState("CT");
+  const [limitCities, setLimitCities] = useState<number | "">(10);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -45,7 +46,7 @@ export default function Runs() {
       const res = await fetch("/api/ingest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ industry, state }),
+        body: JSON.stringify({ industry, state, ...(limitCities !== "" ? { limit_cities: limitCities } : {}) }),
       });
       if (!res.ok) {
         const err = await res.json() as { error?: string };
@@ -72,6 +73,17 @@ export default function Runs() {
             className="block rounded-lg border border-gray-300 px-3 py-2 text-sm">
             {STATES.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
           </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500">Limit cities</label>
+          <input
+            type="number"
+            min={1}
+            value={limitCities}
+            onChange={e => setLimitCities(e.target.value === "" ? "" : Math.max(1, parseInt(e.target.value, 10)))}
+            placeholder="all"
+            className="block w-20 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
         </div>
         <button onClick={start} disabled={busy}
           className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50">
