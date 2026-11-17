@@ -126,10 +126,13 @@ export async function POST(req: NextRequest) {
 </html>`;
 
   // Send via Resend
+  const bccEmail = process.env.OUTREACH_BCC_EMAIL;
+
   const resend = new Resend(resendKey);
   const { error: sendErr } = await resend.emails.send({
     from: `${fromName} <${fromEmail}>`,
     to: toEmail,
+    ...(bccEmail ? { bcc: [bccEmail] } : {}),
     subject: msg.subject,
     text: msg.body,
     html,
