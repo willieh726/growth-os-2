@@ -33,12 +33,14 @@ export async function POST(req: NextRequest) {
 
   const promotedIds = new Set((existingLeads ?? []).map((l: { business_id: string }) => l.business_id));
 
-  // Get top-scoring businesses not yet promoted
+  // Get top-scoring businesses not yet promoted.
+  // Use businesses_scored view — lateral join returns LATEST score per business,
+  // avoiding stale rows when opportunity_scores has multiple entries per business.
   const { data: scores, error: scoresErr } = await supabase
-    .from("opportunity_scores")
-    .select("business_id, total")
-    .gte("total", minScore)
-    .order("total", { ascending: false })
+    .from("businesses_scored")
+    .select("id, opportunity_score")
+    .gte("opportunity_score", minScore)
+    .order("opportunity_score", { ascending: false })
     .limit(limit + promotedIds.size); // fetch extra to account for already-promoted
 
   if (scoresErr) {
@@ -46,15 +48,15 @@ export async function POST(req: NextRequest) {
   }
 
   const candidates = (scores ?? [])
-    .filter((s: { business_id: string; total: number }) => !promotedIds.has(s.business_id))
+    .filter((s: { id: string; opportunity_score: number }) => !promotedIds.has(s.id))
     .slice(0, limit);
 
   if (candidates.length === 0) {
     return NextResponse.json({ promoted: 0 });
   }
 
-  const rows = candidates.map((s: { business_id: string }) => ({
-    business_id: s.business_id,
+  const rows = candidates.map((s: { id: string }) => ({
+    business_id: s.id,
     stage: "new",
   }));
 
