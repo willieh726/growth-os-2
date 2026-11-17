@@ -387,6 +387,7 @@ export async function POST(req: NextRequest) {
     .from("businesses")
     .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered, opportunity_scores!left(business_id)")
     .is("opportunity_scores.business_id", null)
+    .order("id")
     .limit(limit);
 
   if (bizFetchErr) {
@@ -394,6 +395,7 @@ export async function POST(req: NextRequest) {
     const { data: allBiz, error: fallbackErr } = await supabase
       .from("businesses")
       .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
+      .order("id")
       .limit(500);
 
     if (fallbackErr || !allBiz) {
@@ -441,6 +443,14 @@ async function scoreAndReturn(
       const site = await analyzeWebsite(biz.website_url);
       const [total, breakdown] = computeScore(biz, site);
 
+      // Delete any existing score rows for this business then insert fresh.
+      // opportunity_scores has no unique constraint on business_id (multiple
+      // rows allowed), so we can't upsert. Delete + insert is the safe path.
+      await supabase
+        .from("opportunity_scores")
+        .delete()
+        .eq("business_id", biz.id);
+
       const { error: insertErr } = await supabase
         .from("opportunity_scores")
         .insert({
@@ -450,8 +460,7 @@ async function scoreAndReturn(
           weights_version: WEIGHTS_VERSION,
         });
 
-      if (insertErr && insertErr.code !== "23505") {
-        // 23505 = unique violation (already scored by concurrent request) — fine
+      if (insertErr) {
         results.push({ id: biz.id, score: total, error: insertErr.message });
       } else {
         results.push({ id: biz.id, score: total });
