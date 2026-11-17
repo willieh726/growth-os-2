@@ -32,6 +32,7 @@ RULES — every rule is mandatory, no exceptions:
 - Subject line: specific, curiosity-gap, 6 words or fewer. No questions.
 - Tone: peer-to-peer, plain language, one contractor to another.
 - End with a soft CTA: one question or a 15-minute call offer.
+- Format: each sentence or thought on its own line, separated by a blank line (\\n\\n). No walls of text.
 
 Return ONLY valid JSON in this exact shape (no markdown fences, no extra keys):
 {"subject": "...", "body": "..."}`;
