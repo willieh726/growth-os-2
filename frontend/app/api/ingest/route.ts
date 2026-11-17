@@ -197,6 +197,7 @@ function placeToRaw(p: Record<string, unknown>, industry: string, state: string)
 
   const comps: Record<string, Record<string, string>> = {};
   for (const c of (p.addressComponents as Array<{ types: string[]; shortText: string; longText: string }> ?? [])) {
+    if (!Array.isArray(c.types)) continue;
     for (const t of c.types) comps[t] = { shortText: c.shortText, longText: c.longText };
   }
 
@@ -228,7 +229,7 @@ function placeToRaw(p: Record<string, unknown>, industry: string, state: string)
     gbp_rating: (p.rating as number) ?? null,
     gbp_review_count: (p.userRatingCount as number) ?? null,
     gbp_photo_count: ((p.photos as unknown[]) ?? []).length,
-    gbp_types: (p.types as string[]) ?? null,
+    gbp_types: Array.isArray(p.types) ? (p.types as string[]) : null,
     business_status: (p.businessStatus as string) ?? null,
     source: "google_places",
     source_payload: p,
