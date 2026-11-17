@@ -381,6 +381,32 @@ export async function POST(req: NextRequest) {
     return scoreAndReturn(supabase, businesses as BusinessRow[]);
   }
 
+  // force=true: rescore ALL businesses regardless of existing scores (used by "Rescore all" button)
+  const force = url.searchParams.get("force") === "true";
+
+  if (force) {
+    // Page through all businesses and rescore in batches of `limit`
+    const afterIdParam = url.searchParams.get("after") ?? null;
+    let query = supabase
+      .from("businesses")
+      .select("id, website_url, has_website, gbp_rating, gbp_review_count, gbp_photo_count, website_discovered")
+      .order("id")
+      .limit(limit);
+    if (afterIdParam) query = query.gt("id", afterIdParam);
+    const { data: batch, error: batchErr } = await query;
+    if (batchErr || !batch) {
+      return NextResponse.json({ error: batchErr?.message ?? "fetch failed" }, { status: 500 });
+    }
+    if (!batch.length) {
+      return NextResponse.json({ scored: 0, message: "All businesses rescored", done: true });
+    }
+    const response = await scoreAndReturn(supabase, batch as BusinessRow[]);
+    // Attach the last id so the caller can paginate
+    const lastId = batch[batch.length - 1].id;
+    const body = await response.json() as Record<string, unknown>;
+    return NextResponse.json({ ...body, last_id: lastId, done: batch.length < limit });
+  }
+
   // Two-pass approach: reliably find unscored businesses.
   // The PostgREST left-join .is() filter is unreliable — it can silently return ALL rows
   // instead of just unscored ones. Two-pass is explicit and correct.

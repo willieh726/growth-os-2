@@ -48,15 +48,18 @@ export default function Dashboard() {
     setRescoring(true);
     stopRef.current = false;
     let totalScored = 0;
+    let lastId: string | null = null;
 
     try {
       while (!stopRef.current) {
         setRescoreStatus(`Scoring… ${totalScored} done`);
-        const r = await fetch("/api/rescore?limit=20", { method: "POST" });
+        const url = `/api/rescore?limit=20&force=true${lastId ? `&after=${lastId}` : ""}`;
+        const r = await fetch(url, { method: "POST" });
         if (!r.ok) throw new Error(await r.text());
-        const { scored, message } = await r.json() as { scored: number; message?: string };
-        totalScored += scored;
-        if (scored === 0 || message?.includes("All businesses")) {
+        const data = await r.json() as { scored: number; last_id?: string; done?: boolean; message?: string };
+        totalScored += data.scored ?? 0;
+        lastId = data.last_id ?? null;
+        if (data.done || !lastId) {
           setRescoreStatus(`Done — ${totalScored} businesses scored`);
           break;
         }
