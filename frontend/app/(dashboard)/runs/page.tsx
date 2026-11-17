@@ -28,6 +28,7 @@ export default function Runs() {
   const [state, setState] = useState("CT");
   const [limitCities, setLimitCities] = useState<number | "">(10);
   const [busy, setBusy] = useState(false);
+  const [startErr, setStartErr] = useState("");
 
   const load = async () => {
     try {
@@ -42,6 +43,7 @@ export default function Runs() {
 
   const start = async () => {
     setBusy(true);
+    setStartErr("");
     try {
       const res = await fetch("/api/ingest", {
         method: "POST",
@@ -53,7 +55,7 @@ export default function Runs() {
         throw new Error(err.error ?? "ingest failed");
       }
       load();
-    } catch (e) { alert(String(e)); } finally { setBusy(false); }
+    } catch (e) { setStartErr(String(e)); } finally { setBusy(false); }
   };
 
   return (
@@ -90,6 +92,11 @@ export default function Runs() {
           {busy ? "Starting…" : "Start run"}
         </button>
       </div>
+      {startErr && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {startErr}
+        </div>
+      )}
 
       <table className="w-full text-left text-sm">
         <thead><tr className="border-b text-gray-500">
