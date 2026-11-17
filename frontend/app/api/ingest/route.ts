@@ -151,13 +151,11 @@ function isChainOrExcluded(rb: RawBusiness): boolean {
 }
 
 function isContactable(rb: RawBusiness): boolean {
-  // Must have at least a phone number to be worth scoring/outreaching
+  // Google Places doesn't return email, so phone is the only contactability signal at ingest.
+  // Drop only if no phone — these are listings with no way to reach the owner at all.
+  // A business with no website, 0 reviews, but a phone number is a HOT lead (score ~75+).
+  // A business with 500 reviews and a website is a low-score lead — let scoring handle it.
   return !!rb.phone_normalized;
-}
-
-function isGhostListing(rb: RawBusiness): boolean {
-  // 0 reviews AND no website = likely an unclaimed/fake listing, not worth it
-  return (rb.gbp_review_count ?? 0) === 0 && !rb.has_website;
 }
 
 // ── Google Places fetch ───────────────────────────────────────────────────────
@@ -425,8 +423,8 @@ export async function POST(req: NextRequest) {
           if (rb.google_place_id) seenPlaceIds.add(rb.google_place_id);
           if (rb.business_status && rb.business_status !== "OPERATIONAL") continue;
 
-          // Quality gates — drop junk before it ever hits the DB or scoring
-          if (!isContactable(rb) || isChainOrExcluded(rb) || isGhostListing(rb)) {
+          // Quality gates — only drop if truly unreachable or wrong business type
+          if (!isContactable(rb) || isChainOrExcluded(rb)) {
             stats.filtered++;
             continue;
           }
