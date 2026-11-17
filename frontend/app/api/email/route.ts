@@ -27,7 +27,7 @@ RULES — every rule is mandatory, no exceptions:
 - Sell the result, not the service: "capture after-hours quote requests" not "build a contact form".
 - No invented stats, no competitor names, no made-up numbers.
 - No "I noticed" or "I came across your website" opener — it reads as spam.
-- Sign with the sender's first name only, no title, no company.
+- Sign with the sender's first name only, no title, no company. The sender's name is provided in the user message.
 - Subject line: specific, curiosity-gap, 6 words or fewer. No questions.
 - Tone: peer-to-peer, plain language, one contractor to another.
 - End with a soft CTA: one question or a 15-minute call offer.
@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const fromName = process.env.OUTREACH_FROM_NAME ?? "Signal Sync";
 
   if (!supabaseUrl || !serviceKey || !anthropicKey) {
     return NextResponse.json({ error: "Missing required env vars" }, { status: 500 });
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
   const biz = (bizRow ?? {}) as Record<string, unknown>;
   const score = (scoreRow ?? {}) as Record<string, unknown>;
 
-  const userPrompt = `${factsBlock(biz, score)}\n\nIntent: ${intent ?? "initial cold outreach"}`;
+  const userPrompt = `${factsBlock(biz, score)}\n\nIntent: ${intent ?? "initial cold outreach"}\n\nSender name: ${fromName.split(" ")[0]}`;
 
   // Call Anthropic
   const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -154,12 +155,11 @@ export async function POST(req: NextRequest) {
   }
   const { subject, body: emailBody } = JSON.parse(jsonMatch[0]) as { subject: string; body: string };
 
-  // Save to outreach_messages (table may not exist yet — treat as non-fatal)
-  const { data: msg, error: insertErr } = await supabase
+  // Save to outreach_messages
+  const { data: msg } = await supabase
     .from("outreach_messages")
     .insert({
       lead_id,
-      business_id: lead.business_id,
       channel: "email",
       subject,
       body: emailBody,
@@ -169,6 +169,5 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
-  // Return the draft even if save failed (outreach_messages table may not exist)
-  return NextResponse.json({ message_id: msg?.id ?? null, subject, body: emailBody, _insert_error: insertErr?.message ?? null });
+  return NextResponse.json({ message_id: msg?.id ?? null, subject, body: emailBody });
 }

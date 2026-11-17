@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   // Fetch the draft message
   const { data: msg, error: msgErr } = await supabase
     .from("outreach_messages")
-    .select("id, lead_id, business_id, subject, body, status")
+    .select("id, lead_id, subject, body, status")
     .eq("id", message_id)
     .single();
 
@@ -49,11 +49,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Message already sent" }, { status: 409 });
   }
 
+  // Fetch business via lead
+  const { data: leadRow } = await supabase
+    .from("leads")
+    .select("business_id")
+    .eq("id", msg.lead_id)
+    .single();
+
+  const bizId = (leadRow as { business_id?: string } | null)?.business_id;
+
   // Fetch business email
   const { data: biz } = await supabase
     .from("businesses")
     .select("email, name")
-    .eq("id", msg.business_id)
+    .eq("id", bizId)
     .single();
 
   const toEmail = (biz as { email?: string } | null)?.email;

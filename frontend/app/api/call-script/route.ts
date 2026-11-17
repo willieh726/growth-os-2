@@ -166,12 +166,11 @@ export async function POST(req: NextRequest) {
   }
   const script = JSON.parse(jsonMatch[0]);
 
-  // Save to outreach_messages (table may not exist yet — treat as non-fatal)
+  // Save to outreach_messages
   const { data: msg } = await supabase
     .from("outreach_messages")
     .insert({
       lead_id,
-      business_id: lead.business_id,
       channel: "call",
       subject: "Call script",
       body: JSON.stringify(script),
