@@ -21,7 +21,8 @@ HVAC, plumbing, electrical, roofing, landscaping) win more local jobs.
 
 RULES — every rule is mandatory, no exceptions:
 - Under 120 words total (subject + body combined). Count them. If over, cut.
-- One idea only. Pick the single biggest problem the facts reveal.
+- One idea only. Pick the single biggest problem from the MEASURED PROBLEMS list only.
+- NEVER write about anything listed under WHAT THEY DO WELL — those are strengths, not angles.
 - Never mention our agency name, our services, our pricing, our website, or anything about us.
   The email is entirely about THEM and THEIR lost opportunity.
 - Sell the result, not the service: "capture after-hours quote requests" not "build a contact form".
