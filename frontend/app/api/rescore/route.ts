@@ -479,22 +479,27 @@ async function scoreAndReturn(
       const site = await analyzeWebsite(biz.website_url);
       const [total, breakdown] = computeScore(biz, site);
 
-      // Delete any existing score rows for this business then insert fresh.
-      // opportunity_scores has no unique constraint on business_id (multiple
-      // rows allowed), so we can't upsert. Delete + insert is the safe path.
-      await supabase
-        .from("opportunity_scores")
-        .delete()
-        .eq("business_id", biz.id);
-
-      const { error: insertErr } = await supabase
+      // Insert first, then delete old rows — so a timeout between the two
+      // never leaves the business with no score at all.
+      const { data: inserted, error: insertErr } = await supabase
         .from("opportunity_scores")
         .insert({
           business_id: biz.id,
           total,
           breakdown,
           weights_version: WEIGHTS_VERSION,
-        });
+        })
+        .select("id")
+        .single();
+
+      // Only remove old rows once the new one is confirmed saved
+      if (inserted) {
+        await supabase
+          .from("opportunity_scores")
+          .delete()
+          .eq("business_id", biz.id)
+          .neq("id", inserted.id);
+      }
 
       if (insertErr) {
         results.push({ id: biz.id, score: total, error: insertErr.message });
