@@ -465,9 +465,14 @@ export async function POST(req: NextRequest) {
 
   const baseQ = INDUSTRY_QUERIES[industry] ?? industry.replace(/_/g, " ");
 
+  // Stop fetching with 15s to spare so scoring + DB writes can finish before Vercel kills us
+  const DEADLINE_MS = 45_000;
+  const startedAt = Date.now();
+
   try {
     for (const city of cities) {
       if (stats.quota_hit) break; // Google quota hit — stop fetching, still score what we have
+      if (Date.now() - startedAt > DEADLINE_MS) break; // approaching timeout — save what we have
 
       const query = `${baseQ} in ${city} ${state}`;
       let token: string | null = null;

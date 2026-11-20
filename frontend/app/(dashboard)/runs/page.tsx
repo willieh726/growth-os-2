@@ -51,8 +51,14 @@ export default function Runs() {
         body: JSON.stringify({ industry, state, ...(limitCities !== "" ? { limit_cities: limitCities } : {}) }),
       });
       if (!res.ok) {
-        const err = await res.json() as { error?: string };
-        throw new Error(err.error ?? "ingest failed");
+        let errMsg = "ingest failed";
+        try {
+          const err = await res.json() as { error?: string };
+          errMsg = err.error ?? errMsg;
+        } catch {
+          errMsg = await res.text().catch(() => errMsg);
+        }
+        throw new Error(errMsg);
       }
       load();
     } catch (e) { setStartErr(String(e)); } finally { setBusy(false); }
