@@ -119,6 +119,7 @@ export default function Runs() {
                 <span className={`rounded px-2 py-1 text-xs ${
                   r.status === "completed" ? "bg-green-100 text-green-700" :
                   r.status === "failed" ? "bg-red-100 text-red-700" :
+                  r.status === "timed_out" ? "bg-orange-100 text-orange-700" :
                   "bg-yellow-100 text-yellow-700"}`}>
                   {r.status}
                 </span>

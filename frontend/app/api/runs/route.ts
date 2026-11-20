@@ -19,6 +19,14 @@ export async function GET() {
 
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
+  // Mark any run stuck on "running" for >2 minutes as timed_out
+  const staleThreshold = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  await supabase
+    .from("ingestion_runs")
+    .update({ status: "timed_out", finished_at: new Date().toISOString(), error: "Function timed out before completing" })
+    .eq("status", "running")
+    .lt("started_at", staleThreshold);
+
   const { data, error } = await supabase
     .from("ingestion_runs")
     .select("*")
