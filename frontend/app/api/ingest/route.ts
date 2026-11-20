@@ -524,6 +524,9 @@ export async function POST(req: NextRequest) {
         seenTokens.add(token);
         await new Promise((r) => setTimeout(r, 1500)); // token warm-up per Google docs
       }
+
+      // Write stats after every city so a timeout doesn't wipe them
+      await supabase.from("ingestion_runs").update({ stats }).eq("id", runId);
     }
 
     // Score all new/unscored businesses via /api/rescore in batches

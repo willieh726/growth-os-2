@@ -25,7 +25,7 @@ export async function GET() {
     .from("ingestion_runs")
     .update({ status: "timed_out", finished_at: new Date().toISOString(), error: "Function timed out before completing" })
     .eq("status", "running")
-    .lt("started_at", staleThreshold);
+    .lt("created_at", staleThreshold);
 
   const { data, error } = await supabase
     .from("ingestion_runs")
